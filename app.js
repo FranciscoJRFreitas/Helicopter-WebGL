@@ -1,5 +1,5 @@
 import { buildProgramFromSources, loadShadersFromURLS, setupWebGL } from "./libs/utils.js";
-import { ortho, lookAt, flatten, rotateY } from "./libs/MV.js";
+import { ortho, lookAt, flatten, vec3 } from "./libs/MV.js";
 import {modelView, loadMatrix, multRotationY, multScale, multTranslation, popMatrix, pushMatrix, multRotationX, multRotationZ} from "./libs/stack.js";
 
 import * as SPHERE from './libs/objects/sphere.js';
@@ -28,7 +28,7 @@ function setup(shaders)
 
     let mProjection = ortho(-aspect, aspect, -1, 1,-3,3);
 
-    mode = gl.LINES; 
+    mode = gl.TRIANGLES; 
 
     resize_canvas();
     window.addEventListener("resize", resize_canvas);
@@ -62,7 +62,7 @@ function setup(shaders)
         }
     };
 
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clearColor(0.0, 0.68, 0.93, 1.0);
     SPHERE.init(gl);
     CUBE.init(gl);
     CYLINDER.init(gl);
@@ -87,8 +87,18 @@ function setup(shaders)
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mModelView"), false, flatten(modelView()));
     }
 
-    function Body()
+    function Ground()
     {
+        multTranslation([0.0, -0.025, 0.0]);
+        multScale([50.0, 0.05 , 50.0]);
+        
+        uploadModelView();
+        CUBE.draw(gl, program, mode);
+    }
+
+    function Body()
+    {   
+        multTranslation([0.0, 0.4, 0.0]);
         multScale([0.9, 0.5, 0.5]);
 
         uploadModelView();
@@ -97,7 +107,7 @@ function setup(shaders)
 
     function Tail()
     {
-        multTranslation([0.75, 0.1, 0.0]);
+        multTranslation([0.75, 0.5, 0.0]);
         multScale([0.9, 0.15, 0.15]);
 
 
@@ -107,10 +117,9 @@ function setup(shaders)
 
     function TailFin()
     {
-        multTranslation([1.2, 0.165, 0.0]);
+        multTranslation([1.2, 0.6, 0.0]);
         multRotationZ(60);
         multScale([0.3, 0.15, 0.15]);
-
 
         uploadModelView();
         SPHERE.draw(gl, program, mode);
@@ -118,16 +127,16 @@ function setup(shaders)
 
     function Mast()
     {
-        multTranslation([0.0, 0.3, 0.0]);
+        multTranslation([0.0, 0.7, 0.0]);
         multScale([0.025, 0.08, 0.025]);
 
         uploadModelView();
         CYLINDER.draw(gl, program, mode);
     }
 
-    function TailRotor()
+    function TailMast()
     {
-        multTranslation([1.22, 0.175, 0.1]);
+        multTranslation([1.2, 0.62, 0.1]);
         multRotationX(90);
         multScale([0.025, 0.08, 0.025]);
 
@@ -135,55 +144,89 @@ function setup(shaders)
         CYLINDER.draw(gl, program, mode);
     }
 
+    function TailBlade()
+    {
+        multScale([0.4, 0.015, 0.02]);
+        uploadModelView();
+        SPHERE.draw(gl, program, mode);
+    }
+
+    function TailBlades()
+    {
+        pushMatrix();
+            multTranslation([1.2, 0.62, 0.13]);
+            multRotationZ(360*time);
+            multTranslation([0.1, 0.0, 0.0]);
+            TailBlade();
+        popMatrix();
+        pushMatrix();
+            multTranslation([1.2, 0.62, 0.13]);
+            multRotationZ(360*time);
+            multRotationY(180);
+            multTranslation([0.1, 0.0, 0.0]);
+            TailBlade();
+        popMatrix();
+
+    }
+
     function landingSkid(){
-        multTranslation([0.0, -0.4, .2]);
         multScale([1, 0.01, 0.025]);
 
         uploadModelView();
         CYLINDER.draw(gl, program, mode); 
     }
 
-    function landingSkid2(){
-        multTranslation([0.0, -0.4, -.2]);
-        multScale([1, 0.01, 0.025]);
-
-        uploadModelView();
-        CYLINDER.draw(gl, program, mode); 
+    function LandingSkids()
+    {
+        pushMatrix();
+            multTranslation([0.0, 0.0, 0.2]);
+            landingSkid();
+        popMatrix();
+        pushMatrix();
+            multTranslation([0.0, 0.0, -0.2]);
+            landingSkid();
+        popMatrix();
     }
 
-    function connection1(){
-        multTranslation([0.2, -0.25, 0.15]);
-        multScale([0.3, 0.015, 0.05]);
-        //rodar
+    function Connection()
+    {
+        multScale([0.3, 0.015, 0.02]);
+
         uploadModelView();
         CUBE.draw(gl, program, mode);
     }
 
-    function connection2(){
-        multTranslation([0.2, -0.25, -0.15]);
-        multScale([0.3, 0.015, 0.05]);
-       //rodar
-        uploadModelView();
-        CUBE.draw(gl, program, mode);
-    }
-    function connection3(){
-        multTranslation([-0.2, -0.25, 0.15]);
-        multScale([0.3, 0.015, 0.05]);
-       //rodar
-        uploadModelView();
-        CUBE.draw(gl, program, mode);
-    }
-    function connection4(){
-        multTranslation([-0.2, -0.25, -0.15]);
-        multScale([0.3, 0.015, 0.05]);
-       //rodar
-        uploadModelView();
-        CUBE.draw(gl, program, mode);
+    function Connections()
+    {
+        pushMatrix();
+            multTranslation([0.2, 0.108, 0.15]);
+            multRotationX(-30);
+            multRotationZ(-45);
+            Connection();
+        popMatrix();
+        pushMatrix();
+            multTranslation([0.2, 0.108, -0.15]);
+            multRotationX(30);
+            multRotationZ(-45);
+            Connection();
+        popMatrix();
+        pushMatrix();
+            multTranslation([-0.2, 0.108, 0.15]);
+            multRotationX(-30);
+            multRotationZ(45);
+            Connection();
+        popMatrix();
+        pushMatrix();
+            multTranslation([-0.2, 0.108, -0.15]);
+            multRotationX(30);
+            multRotationZ(45);
+            Connection();
+        popMatrix();
     }
 
     function Blade()
     {
-        multTranslation([0.5, 0.3, 0.0]);
+        multTranslation([0.5, 0.7, 0.0]);
         multScale([1.0, 0.015, 0.05]);
 
         uploadModelView();
@@ -209,40 +252,8 @@ function setup(shaders)
         popMatrix();
     }
 
-    function TailBlade()
+    function helicopter() 
     {
-        multTranslation([1.32, 0.175, 0.11]);
-        multScale([0.4, 0.015, 0.015]);
-        multRotationX(90);
-        uploadModelView();
-        SPHERE.draw(gl, program, mode);
-    }
-
-    function TailBlades()
-    {
-        pushMatrix();
-            TailBlade();
-        popMatrix();
-        /*pushMatrix();
-            TailBlade();
-        popMatrix();*/
-        /Segunda tailblade a adicionar/
-    }
-   
-
-    function render()
-    {
-        if(animation) time += speed;
-        window.requestAnimationFrame(render);
-
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        
-        gl.useProgram(program);
-        
-        gl.uniformMatrix4fv(gl.getUniformLocation(program, "mProjection"), false, flatten(mProjection));
-
-        loadMatrix(lookAt([ex,ey,ez], [0,0,0], [0,1,0]));
-        
         pushMatrix();
             Body();
         popMatrix();
@@ -253,7 +264,7 @@ function setup(shaders)
             TailFin();
         popMatrix();
         pushMatrix();
-            TailRotor();
+            TailMast();
         popMatrix();
         pushMatrix();
             multRotationY(360*time);
@@ -264,34 +275,37 @@ function setup(shaders)
             TailBlades();
         popMatrix();
         pushMatrix();
-            landingSkid()
+            LandingSkids()
         popMatrix(); 
         pushMatrix();
-            landingSkid2()
-        popMatrix();      
-        pushMatrix();
-            connection1()
-        popMatrix();  
-        pushMatrix();
-            connection2()
+            Connections()
         popMatrix(); 
+    }
+
+    function render()
+    {
+        if(animation) time += speed;
+        window.requestAnimationFrame(render);
+
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        
+        gl.useProgram(program);
+
+        gl.uniformMatrix4fv(gl.getUniformLocation(program, "mProjection"), false, flatten(mProjection));
+
+        loadMatrix(lookAt([ex,ey,ez], [0,0,0], [0,1,0]));
+
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.8, 0.35, 0.5));
+
         pushMatrix();
-            connection3()
-        popMatrix(); 
-        pushMatrix();
-            connection4()
-        popMatrix(); 
-        /*
-        pushMatrix();
-            multRotationY(360*time/VENUS_YEAR);
-            multTranslation([VENUS_ORBIT, 0, 0]);
-            Venus();
+            helicopter();
         popMatrix();
+
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.08, 0.28, 0.2));
+
         pushMatrix();
-            multRotationY(360*time/EARTH_YEAR);
-            multTranslation([EARTH_ORBIT, 0, 0]);
-            EarthAndMoon();
-        popMatrix();*/
+            Ground();
+        popMatrix();
     }
 }
 
