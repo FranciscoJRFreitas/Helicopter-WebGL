@@ -135,11 +135,26 @@ function setup(shaders)
         CYLINDER.draw(gl, program, mode);
     }
 
+    function landingSkid(){
+        multTranslation([0.0, -0.4, .2]);
+        multScale([1, 0.01, 0.025]);
+
+        uploadModelView();
+        CYLINDER.draw(gl, program, mode); 
+    }
+
+    function landingSkid2(){
+        multTranslation([0.0, -0.4, -.2]);
+        multScale([1, 0.01, 0.025]);
+
+        uploadModelView();
+        CYLINDER.draw(gl, program, mode); 
+    }
     function TailBlade()
     {
         multTranslation([1.32, 0.175, 0.11]);
-        multScale([0.2, 0.015, 0.015]);
-
+        multScale([0.4, 0.015, 0.015]);
+        multRotationX(90);
         uploadModelView();
         SPHERE.draw(gl, program, mode);
     }
@@ -153,6 +168,36 @@ function setup(shaders)
         SPHERE.draw(gl, program, mode);
     }
 
+    function connection1(){
+        multTranslation([0.2, -0.25, 0.15]);
+        multScale([0.3, 0.015, 0.05]);
+        //rodar
+        uploadModelView();
+        CUBE.draw(gl, program, mode);
+    }
+
+    function connection2(){
+        multTranslation([0.2, -0.25, -0.15]);
+        multScale([0.3, 0.015, 0.05]);
+       //rodar
+        uploadModelView();
+        CUBE.draw(gl, program, mode);
+    }
+    function connection3(){
+        multTranslation([-0.2, -0.25, 0.15]);
+        multScale([0.3, 0.015, 0.05]);
+       //rodar
+        uploadModelView();
+        CUBE.draw(gl, program, mode);
+    }
+    function connection4(){
+        multTranslation([-0.2, -0.25, -0.15]);
+        multScale([0.3, 0.015, 0.05]);
+       //rodar
+        uploadModelView();
+        CUBE.draw(gl, program, mode);
+    }
+   
     function Blades()
     {
         pushMatrix();
@@ -181,8 +226,9 @@ function setup(shaders)
         /*pushMatrix();
             TailBlade();
         popMatrix();*/
-        /*Segunda tailblade a adicionar*/
+        /Segunda tailblade a adicionar/
     }
+   
 
     function render()
     {
@@ -217,6 +263,24 @@ function setup(shaders)
         pushMatrix();
             TailBlades();
         popMatrix();
+        pushMatrix();
+            landingSkid()
+        popMatrix(); 
+        pushMatrix();
+            landingSkid2()
+        popMatrix();      
+        pushMatrix();
+            connection1()
+        popMatrix();  
+        pushMatrix();
+            connection2()
+        popMatrix(); 
+        pushMatrix();
+            connection3()
+        popMatrix(); 
+        pushMatrix();
+            connection4()
+        popMatrix(); 
         /*
         pushMatrix();
             multRotationY(360*time/VENUS_YEAR);
