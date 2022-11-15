@@ -150,23 +150,6 @@ function setup(shaders)
         uploadModelView();
         CYLINDER.draw(gl, program, mode); 
     }
-    function TailBlade()
-    {
-        multTranslation([1.32, 0.175, 0.11]);
-        multScale([0.4, 0.015, 0.015]);
-        multRotationX(90);
-        uploadModelView();
-        SPHERE.draw(gl, program, mode);
-    }
-
-    function Blade()
-    {
-        multTranslation([0.5, 0.3, 0.0]);
-        multScale([1.0, 0.015, 0.05]);
-
-        uploadModelView();
-        SPHERE.draw(gl, program, mode);
-    }
 
     function connection1(){
         multTranslation([0.2, -0.25, 0.15]);
@@ -197,6 +180,15 @@ function setup(shaders)
         uploadModelView();
         CUBE.draw(gl, program, mode);
     }
+
+    function Blade()
+    {
+        multTranslation([0.5, 0.3, 0.0]);
+        multScale([1.0, 0.015, 0.05]);
+
+        uploadModelView();
+        SPHERE.draw(gl, program, mode);
+    }
    
     function Blades()
     {
@@ -217,6 +209,14 @@ function setup(shaders)
         popMatrix();
     }
 
+    function TailBlade()
+    {
+        multTranslation([1.32, 0.175, 0.11]);
+        multScale([0.4, 0.015, 0.015]);
+        multRotationX(90);
+        uploadModelView();
+        SPHERE.draw(gl, program, mode);
+    }
 
     function TailBlades()
     {
