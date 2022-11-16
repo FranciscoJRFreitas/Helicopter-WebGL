@@ -367,8 +367,8 @@ function setup(shaders)
 
         if(height < 0)
             height = 0;
-        else if (height > 10)
-            height = 10;
+        else if (height > 20)
+            height = 20;
     }
 
     function World()
