@@ -335,7 +335,7 @@ function setup(shaders)
         popMatrix();
         pushMatrix();
             multTranslation([1.2, 0.62, 0.13]);
-            multRotationZ(360*time * motorVelocity * VELOCITY_FACTOR);
+            multRotationZ(360 * time * motorVelocity * VELOCITY_FACTOR);
             TailBlades();
         popMatrix();
         pushMatrix();
@@ -347,13 +347,23 @@ function setup(shaders)
     }
 
     function updateHeight()
-    {
-        for(let i = 0; i < VELOCITY_LEVEL; i++) {
-            if(motorVelocity >= 4)
-                height += 0.01;
-            else if (motorVelocity <= 2)
-                height -= 0.01 / i;
-        }
+    {   
+        if(motorVelocity == 0)
+           height -= 0.08;
+        if(motorVelocity == 1)
+            height -= 0.01;
+        if(motorVelocity == 2)
+            height -= 0.005;
+        if(motorVelocity == 4)
+            height += 0.0025;
+        if(motorVelocity == 5)
+            height += 0.005;
+        if(motorVelocity == 6)
+            height += 0.0075;
+        if(motorVelocity == 7)
+            height += 0.01;
+        if(motorVelocity == 8)
+            height += 0.02;
 
         if(height < 0)
             height = 0;
