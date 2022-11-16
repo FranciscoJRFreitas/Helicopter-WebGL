@@ -19,6 +19,7 @@ let ez = 1;
 let view = 0;
 let s = 1;
 let motorVelocity = 0;
+let height = 0;
 
 
 function setup(shaders)
@@ -90,8 +91,8 @@ function setup(shaders)
             case "ArrowUp":
                 if(motorVelocity < 8) {
                     motorVelocity += 0.625;
-                }
 
+                }
             break;
             case "ArrowDown":
                 if(motorVelocity > 0) {
@@ -343,6 +344,21 @@ function setup(shaders)
         popMatrix(); 
     }
 
+    function World()
+    {
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.08, 0.22, 0.2));
+
+        pushMatrix();
+            helicopter();
+        popMatrix();
+
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.08, 0.28, 0.2));
+
+        pushMatrix();
+            Ground();
+        popMatrix();
+    }
+
     function render()
     {
         if(animation) time += speed;
@@ -356,18 +372,11 @@ function setup(shaders)
 
         loadMatrix(lookAt([ex,ey,ez], [0,0,0], [0,1,0]));
 
-        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.08, 0.22, 0.2));
-
         pushMatrix();
             multScale([s, s, s]);
-            helicopter();
+            World();
         popMatrix();
 
-        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.08, 0.28, 0.2));
-
-        pushMatrix();
-            Ground();
-        popMatrix();
     }
 }
 
