@@ -88,14 +88,14 @@ function setup(shaders)
     document.onkeydown = function(event) {
         switch(event.key) {
             case "ArrowUp":
-                if(motorVelocity < 5) {
-                    motorVelocity++;
+                if(motorVelocity < 8) {
+                    motorVelocity += 0.625;
                 }
 
             break;
             case "ArrowDown":
                 if(motorVelocity > 0) {
-                    motorVelocity--;
+                    motorVelocity -= 0.625;
                 }
             break;
             case "ArrowLeft":
