@@ -387,12 +387,18 @@ function setup(shaders)
 
         pushMatrix();
             updateHeight();
-            multTranslation([0.0, height, 0.0]);
+            multTranslation([2.0, height, 0.0]);
+            multRotationY(-90);
+            if(isMovingLeft){// && height > 0){
+            multTranslation([0.0, 0.0, 2.0]);
+            multRotationY(360*time);
             multTranslation([2.0, 0, 0.0]);
-            if(isMovingLeft) {
-                multRotationY(360*time);
-                multTranslation([2.0, 0, 0.0]);
+            multRotationY(-90);
             }
+            //if(isMovingLeft){
+            //    multRotationY(360*time);
+            //    multTranslation([2.0, 0, 0.0]);
+            //}
             helicopter();
         popMatrix();
 
