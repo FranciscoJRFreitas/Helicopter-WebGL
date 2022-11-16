@@ -24,7 +24,7 @@ let s = 1;
 let motorVelocity = 0;
 let height = 0;
 let isMovingLeft = false;
-let leftRotation = 0;
+let timeAtStop = 0;
 
 
 function setup(shaders)
@@ -389,16 +389,20 @@ function setup(shaders)
             updateHeight();
             multTranslation([2.0, height, 0.0]);
             multRotationY(-90);
-            if(isMovingLeft){// && height > 0){
-            multTranslation([0.0, 0.0, 2.0]);
-            multRotationY(360*time);
-            multTranslation([2.0, 0, 0.0]);
-            multRotationY(-90);
+            if(isMovingLeft && height > 0){
+                multTranslation([0.0, 0.0, 2.0]);
+                multRotationY(360*time);
+                multTranslation([2.0, 0, 0.0]);
+                multRotationY(-90);
+                timeAtStop = time;
             }
-            //if(isMovingLeft){
-            //    multRotationY(360*time);
-            //    multTranslation([2.0, 0, 0.0]);
-            //}
+            else{
+                multTranslation([0.0, 0.0, 2.0]);
+                multRotationY(360*timeAtStop);
+                multTranslation([2.0, 0, 0.0]);
+                multRotationY(-90);
+            }
+
             helicopter();
         popMatrix();
 
