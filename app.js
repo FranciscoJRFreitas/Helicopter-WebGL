@@ -16,6 +16,10 @@ let animation = true;   // Animation is running
 let ex = 1;
 let ey = 1;
 let ez = 1;
+let view = 0;
+let s = 1;
+let motorVelocity = 0;
+
 
 function setup(shaders)
 {
@@ -33,32 +37,90 @@ function setup(shaders)
     resize_canvas();
     window.addEventListener("resize", resize_canvas);
 
+    function changeView() 
+    {
+
+        if(view == 0){
+            ex = 1;
+            ey = 1;
+            ez = 1;
+            view++;
+        }
+        else if (view == 1){
+            ex = 0;
+            ey = 0;
+            ez = 0;
+            view++;
+        }
+        else if (view == 2) {
+            ex = 1;
+            ey = 0;
+            ez = 1;
+            view++;
+        }
+        else if (view == 3) {
+            ex = 0;
+            ey = 1;
+            ez = 1;
+            view++;
+        }
+        else if (view == 4) {
+            ex = 1;
+            ey = 0;
+            ez = 1;
+            view++;
+        }
+        else if (view == 5) {
+            ex = 1;
+            ey = 1;
+            ez = 0;
+            view++;
+        }
+        else if (view == 6) {
+            ex = -1;
+            ey = 0.2;
+            ez = 0.6;
+            view = 0;
+        }
+
+    }
+
     document.onkeydown = function(event) {
         switch(event.key) {
             case "ArrowUp":
-                ey -= 0.05;
+                if(motorVelocity < 5) {
+                    motorVelocity++;
+                }
+
             break;
             case "ArrowDown":
-                ey += 0.05;
+                if(motorVelocity > 0) {
+                    motorVelocity--;
+                }
             break;
             case "ArrowLeft":
-                ex -= 0.05;
                break;
             case "ArrowRight":
-                ex += 0.05;
             break;
-            case "a":
-                ez -= 0.05;
+            case "q":
+                changeView();
             break;
-            case "d":
-                ez += 0.05;
+            case "r":
+                if(s-0.08 > 0)
+                    s -= 0.08;
+                else
+                    s /=2;
+            break;
+            case "f":
+                s += 0.04;
             break;
             case "s":
-                if(mode === gl.LINES)
-                    mode = gl.TRIANGLES;
-                else
+                mode = gl.TRIANGLES;
+            break;
+            case "w":
                 mode = gl.LINES;
             break;
+
         }
     };
 
@@ -127,7 +189,7 @@ function setup(shaders)
 
     function Mast()
     {
-        multTranslation([0.0, 0.7, 0.0]);
+        multTranslation([0.0, 0.68, 0.0]);
         multScale([0.025, 0.08, 0.025]);
 
         uploadModelView();
@@ -154,14 +216,10 @@ function setup(shaders)
     function TailBlades()
     {
         pushMatrix();
-            multTranslation([1.2, 0.62, 0.13]);
-            multRotationZ(360*time);
             multTranslation([0.1, 0.0, 0.0]);
             TailBlade();
         popMatrix();
         pushMatrix();
-            multTranslation([1.2, 0.62, 0.13]);
-            multRotationZ(360*time);
             multRotationY(180);
             multTranslation([0.1, 0.0, 0.0]);
             TailBlade();
@@ -268,11 +326,13 @@ function setup(shaders)
             TailMast();
         popMatrix();
         pushMatrix();
-            multRotationY(360*time);
+            multRotationY(360 * time * motorVelocity);
             Blades();
             Mast();
         popMatrix();
         pushMatrix();
+            multTranslation([1.2, 0.62, 0.13]);
+            multRotationZ(360*time * motorVelocity);
             TailBlades();
         popMatrix();
         pushMatrix();
@@ -296,9 +356,10 @@ function setup(shaders)
 
         loadMatrix(lookAt([ex,ey,ez], [0,0,0], [0,1,0]));
 
-        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.8, 0.35, 0.5));
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.08, 0.22, 0.2));
 
         pushMatrix();
+            multScale([s, s, s]);
             helicopter();
         popMatrix();
 
