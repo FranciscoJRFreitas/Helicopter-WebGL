@@ -25,6 +25,7 @@ let motorVelocity = 0;
 let height = 0;
 let isMovingLeft = false;
 let timeAtStop = 0;
+let timeStopped = 0;
 
 
 function setup(shaders)
@@ -390,15 +391,17 @@ function setup(shaders)
             multTranslation([2.0, height, 0.0]);
             multRotationY(-90);
             if(isMovingLeft && height > 0){
-                multTranslation([0.0, 0.0, 2.0]);
-                multRotationY(360*time);
-                multTranslation([2.0, 0, 0.0]);
-                multRotationY(-90);
-                timeAtStop = time;
-            }
-            else{
+                timeStopped = 0;
                 multTranslation([0.0, 0.0, 2.0]);
                 multRotationY(360*timeAtStop);
+                multTranslation([2.0, 0, 0.0]);
+                multRotationY(-90);
+            }
+            else{
+                timeAtStop = time;
+                timeStopped += speed;
+                multTranslation([0.0, 0.0, 2.0]);
+                multRotationY(360*(time - timeStopped));
                 multTranslation([2.0, 0, 0.0]);
                 multRotationY(-90);
             }
