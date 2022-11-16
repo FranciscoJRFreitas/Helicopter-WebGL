@@ -169,8 +169,9 @@ function setup(shaders)
 
     }
 
-    function landingSkid(){
-        multScale([1, 0.01, 0.025]);
+    function landingSkid()
+    {
+        multScale([1, 0.03, 0.025]);
 
         uploadModelView();
         CYLINDER.draw(gl, program, mode); 
@@ -199,25 +200,25 @@ function setup(shaders)
     function Connections()
     {
         pushMatrix();
-            multTranslation([0.2, 0.108, 0.15]);
+            multTranslation([0.2, 0.1, 0.15]);
             multRotationX(-30);
             multRotationZ(-45);
             Connection();
         popMatrix();
         pushMatrix();
-            multTranslation([0.2, 0.108, -0.15]);
+            multTranslation([0.2, 0.1, -0.15]);
             multRotationX(30);
             multRotationZ(-45);
             Connection();
         popMatrix();
         pushMatrix();
-            multTranslation([-0.2, 0.108, 0.15]);
+            multTranslation([-0.2, 0.1, 0.15]);
             multRotationX(-30);
             multRotationZ(45);
             Connection();
         popMatrix();
         pushMatrix();
-            multTranslation([-0.2, 0.108, -0.15]);
+            multTranslation([-0.2, 0.1, -0.15]);
             multRotationX(30);
             multRotationZ(45);
             Connection();
