@@ -6,6 +6,9 @@ import * as SPHERE from './libs/objects/sphere.js';
 import * as CUBE from './libs/objects/cube.js';
 import * as CYLINDER from './libs/objects/cylinder.js';
 
+const VELOCITY_FACTOR = 0.625;
+const VELOCITY_LEVEL = 8;
+
 /** @type WebGLRenderingContext */
 let gl;
 
@@ -89,14 +92,13 @@ function setup(shaders)
     document.onkeydown = function(event) {
         switch(event.key) {
             case "ArrowUp":
-                if(motorVelocity < 8) {
-                    motorVelocity += 0.625;
-
+                if(motorVelocity < VELOCITY_LEVEL) {
+                    motorVelocity++;
                 }
             break;
             case "ArrowDown":
                 if(motorVelocity > 0) {
-                    motorVelocity -= 0.625;
+                    motorVelocity--;
                 }
             break;
             case "ArrowLeft":
@@ -327,13 +329,13 @@ function setup(shaders)
             TailMast();
         popMatrix();
         pushMatrix();
-            multRotationY(360 * time * motorVelocity);
+            multRotationY(360 * time * motorVelocity * VELOCITY_FACTOR);
             Blades();
             Mast();
         popMatrix();
         pushMatrix();
             multTranslation([1.2, 0.62, 0.13]);
-            multRotationZ(360*time * motorVelocity);
+            multRotationZ(360*time * motorVelocity * VELOCITY_FACTOR);
             TailBlades();
         popMatrix();
         pushMatrix();
@@ -344,11 +346,28 @@ function setup(shaders)
         popMatrix(); 
     }
 
+    function updateHeight()
+    {
+        for(let i = 0; i < VELOCITY_LEVEL; i++) {
+            if(motorVelocity >= 4)
+                height += 0.01;
+            else if (motorVelocity <= 2)
+                height -= 0.01 / i;
+        }
+
+        if(height < 0)
+            height = 0;
+        else if (height > 10)
+            height = 10;
+    }
+
     function World()
     {
         gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.08, 0.22, 0.2));
 
         pushMatrix();
+            updateHeight();
+            multTranslation([0.0, height, 0.0]);
             helicopter();
         popMatrix();
 
