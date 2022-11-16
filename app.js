@@ -23,6 +23,8 @@ let view = 0;
 let s = 1;
 let motorVelocity = 0;
 let height = 0;
+let isMovingLeft = false;
+let leftRotation = 0;
 
 
 function setup(shaders)
@@ -102,20 +104,20 @@ function setup(shaders)
                 }
             break;
             case "ArrowLeft":
+                isMovingLeft = true;
                break;
-            case "ArrowRight":
-            break;
             case "q":
                 changeView();
             break;
             case "r":
-                if(s-0.08 > 0)
-                    s -= 0.08;
-                else
-                    s /=2;
+                if(s-0.1 > 0.00001)
+                    s -= 0.1;
+                    console.log(s);
             break;
             case "f":
-                s += 0.04;
+                if(s+0.05 < 10)
+                    s += 0.05;
+                    console.log(s);
             break;
             case "s":
                 mode = gl.TRIANGLES;
@@ -126,6 +128,14 @@ function setup(shaders)
 
         }
     };
+
+    document.onkeyup = function(event) {
+        switch(event.key) {
+            case "ArrowLeft":
+                isMovingLeft = false;
+            break;
+        }
+    }
 
     gl.clearColor(0.0, 0.68, 0.93, 1.0);
     SPHERE.init(gl);
@@ -378,7 +388,19 @@ function setup(shaders)
         pushMatrix();
             updateHeight();
             multTranslation([0.0, height, 0.0]);
+            multTranslation([2.0, 0, 0.0]);
+            if(isMovingLeft) {
+                multRotationY(360*time);
+                multTranslation([2.0, 0, 0.0]);
+            }
             helicopter();
+        popMatrix();
+
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.3, 0.6, 0.4));
+
+        pushMatrix();
+            uploadModelView();
+            CUBE.draw(gl, program, mode);
         popMatrix();
 
         gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.08, 0.28, 0.2));
