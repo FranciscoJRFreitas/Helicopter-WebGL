@@ -10,17 +10,20 @@ const VELOCITY_FACTOR = 0.5;
 const MAXIMUM_VELOCITY_LEVEL = 8;
 const CEILING = 10;
 const FLOOR = 0;
+const SPEED = 0.005; // Speed (how many time units added to time on each render pass
+const SECOND = 60 * SPEED; //Speed increments one time per second.
 let unitsAwayFromCenter = 5.0; // radius of helicopter s circular movement | CONSTANT VS VARIABLE
 
 /** @type WebGLRenderingContext */
 let gl;
 let time = 0;           // Global simulation time
-let speed = 0.005;     // Speed (how many time units added to time on each render pass
 let mode;               // Drawing mode (gl.LINES or gl.TRIANGLES)
 let s = 0.3;            //World Scale
 let motorVelocity = 0;
 let height = 0;
 let isMovingLeft = false;
+let boxesNum = 0;
+let boxes = [];
 
 let leaningAngle = 0; //Not supposed to change
 let heliTime = 0;
@@ -75,12 +78,10 @@ function setup(shaders)
             case "r":
                 if(s-0.1 > 0.00001)
                     s -= 0.1;
-                    console.log(s);
             break;
             case "f":
                 if(s+0.05 < 10)
                     s += 0.05;
-                    console.log(s);
             break;
             case "s":
                 mode = gl.TRIANGLES;
@@ -91,11 +92,15 @@ function setup(shaders)
 
         }
     };
-
+    let k = 0;
     document.onkeyup = function(event) {
         switch(event.key) {
             case "ArrowLeft":
                 isMovingLeft = false;
+            break;
+            case " ":
+                boxes.push({height: height, time: time, boxTime: 0, reachedGround: 1, reachGroundTime: 0}); //reachedGround: variable to make boxes stop at y = 0.
+                boxesNum++
             break;
         }
     }
@@ -123,6 +128,29 @@ function setup(shaders)
     function uploadModelView()
     {
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mModelView"), false, flatten(modelView()));
+    }
+
+    const BOX_GRAVITY = 0.5;
+    function DropBox()
+    {
+        for(let b of boxes){
+            b.boxTime += SPEED;
+            if(b.boxTime - SPEED <= 5 * SECOND) {
+            pushMatrix();
+                b.height = b.height - b.boxTime**2 * BOX_GRAVITY;
+                if(b.height <= 0.1) //If box reaches ground
+                    b.reachedGround = 0;
+                else
+                    b.reachGroundTime += SPEED; //reachGroundTime stops incrementing when it reaches the ground
+                multTranslation([0.0, ((b.height > 0.4 ? b.height - 0.4 : b.height)) * b.reachedGround , unitsAwayFromCenter + b.reachGroundTime]);
+                multRotationY(90 *b.reachGroundTime * b.reachedGround);
+                multRotationX(90 *b.reachGroundTime * b.reachedGround);
+                CargoBox();
+            popMatrix();
+            }
+        else
+            boxes.splice(boxes.indexOf(b),1);
+        }
     }
 
     function Ground()
@@ -328,10 +356,9 @@ function setup(shaders)
         if(motorVelocity == 0){
            height -= 0.04 * VELOCITY_FACTOR;
            if(height > 0) //When the helicopter is falling
-           bladeTime += heightFactorOnSpeed * speed * VELOCITY_FACTOR*3;
+           bladeTime += heightFactorOnSpeed * SPEED * VELOCITY_FACTOR*3;
         }else{
-            bladeTime += (heightFactorOnSpeed + 0.2) * speed * motorVelocity * VELOCITY_FACTOR*3; //Smoothing the blade stopping animation
-            console.log(bladeTime);
+            bladeTime += (heightFactorOnSpeed + 0.2) * SPEED * motorVelocity * VELOCITY_FACTOR*3; //Smoothing the blade stopping animation
         if(motorVelocity == 1)
             height -= 0.01 * VELOCITY_FACTOR;
         if(motorVelocity == 2)
@@ -360,7 +387,7 @@ function setup(shaders)
             multTranslation([unitsAwayFromCenter, height, 0.0]); // Initial Helicopter pos
             multRotationY(-90);
             if(isMovingLeft && height > FLOOR) { // Can move only when it s in the air and key is pressed.
-                heliTime += speed * (motorVelocity + 1) * VELOCITY_FACTOR/5; //(motorVelocity + 1) so that it can move left while falling
+                heliTime += SPEED * (motorVelocity + 1) * VELOCITY_FACTOR/5; //(motorVelocity + 1) so that it can move left while falling
                 multTranslation([0.0, 0.0, unitsAwayFromCenter]); // Translation to rotation on Y.
                 multRotationY(360 * heliTime);
                 multTranslation([unitsAwayFromCenter, 0, 0.0]); // Radius of Y rotation
@@ -368,7 +395,6 @@ function setup(shaders)
                 leaningAngle < 0 ? leaningAngle = 0 : leaningAngle = leaningAngle + 0.5;
                 multRotationX(leaningAngle/MAXIMUM_VELOCITY_LEVEL * motorVelocity);// Helicopter twisting sideways to make left movement realistic.
                 multRotationZ(leaningAngle/MAXIMUM_VELOCITY_LEVEL * motorVelocity); // Helicopter Z angle (30 dg maximum) that changes acording to speed
-                console.log(leaningAngle);
                 //Stabilization
                 if(leaningAngle >= 30) //gradual acceleration
                     leaningAngle = leaningAngle - 0.5;
@@ -376,8 +402,6 @@ function setup(shaders)
                     leaningAngle--;
                     if(motorVelocity <= 1) //So that the helicopter model doesnt enter the ground.
                         leaningAngle <= 0 ? leaningAngle = -0.1 : leaningAngle = leaningAngle - 3;
-                console.log(height);
-
             }
             else{
                 multTranslation([0.0, 0.0, unitsAwayFromCenter]);
@@ -409,22 +433,23 @@ function setup(shaders)
     function CargoBoxSide() 
     {
         multTranslation([0.0, 0.425, 0.52]);
-        multScale([1.0,0.15,0.04]);
+        multScale([1.0,0.1,0.1]);
         uploadModelView();
         CUBE.draw(gl, program, mode);
     }
 
-    function Plus()
+    function Cross()
     {
+        multRotationZ(45);
             pushMatrix();
                 multTranslation([0.0, -0.2125, 0.0]);
-                multScale([1.0,0.5,1.0]);
+                multScale([1.06,0.5,1.0]);
                 CargoBoxSide();
             popMatrix();
             pushMatrix();
                 multTranslation([0.2125,0.0, 0.0]);
                 multRotationZ(90);
-                multScale([1.0,0.5,1.0]);
+                multScale([1.06,0.5,1.0]);
                 CargoBoxSide();
             popMatrix();
     }
@@ -446,10 +471,6 @@ function setup(shaders)
             multRotationZ(-90);
             CargoBoxSide();
         popMatrix();
-        pushMatrix();
-            Plus();
-        popMatrix();
-        
     }
 
     function CargoBody()
@@ -460,6 +481,8 @@ function setup(shaders)
 
     function CargoBox()
     {
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.6, 0.3, 0.0)); //Box color
+
         pushMatrix();
             multTranslation([0.0, 0.5, 0.0]);
             multScale([0.2,0.2,0.2]);
@@ -467,7 +490,36 @@ function setup(shaders)
                 CargoBody();
             popMatrix();
             gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.3, 0.15, 0.0)); //Sides color
+            //left face
             pushMatrix();
+                CargoBoxFaceSides();
+            popMatrix();
+            //top face
+            pushMatrix();
+                multRotationX(-90);
+                pushMatrix();
+                    Cross();
+                popMatrix();
+                CargoBoxFaceSides();
+            popMatrix();
+            //front face
+            pushMatrix();
+                multRotationY(90);
+                CargoBoxFaceSides();
+            popMatrix();
+            //right face
+            pushMatrix();
+                multRotationY(-90);
+                CargoBoxFaceSides();
+            popMatrix();
+            //bottom face
+            pushMatrix();
+                multRotationX(90);
+                CargoBoxFaceSides();
+            popMatrix();
+            //back face
+            pushMatrix();
+                multRotationX(180);
                 CargoBoxFaceSides();
             popMatrix();
         popMatrix();
@@ -480,10 +532,8 @@ function setup(shaders)
 
         Helicopter();
 
-        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.6, 0.3, 0.0)); //Box color
-
         CargoBox();
-        
+        DropBox();
 
         gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(.2, .2, .2));
 
@@ -502,8 +552,9 @@ function setup(shaders)
 
     function render()
     {
-        document.getElementById("height").innerHTML = Number((height).toFixed(1));;
-        time += speed;
+        document.getElementById("height").innerHTML = Number((height).toFixed(1));
+        document.getElementById("boxes").innerHTML = boxes.length;
+        time += SPEED;
         window.requestAnimationFrame(render);
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
