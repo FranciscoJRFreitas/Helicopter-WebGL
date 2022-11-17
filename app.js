@@ -1,12 +1,12 @@
 import { buildProgramFromSources, loadShadersFromURLS, setupWebGL } from "./libs/utils.js";
-import { ortho, lookAt, flatten, vec3, scale } from "./libs/MV.js";
+import { ortho, lookAt, flatten, vec3, scale, rotateX } from "./libs/MV.js";
 import {modelView, loadMatrix, multRotationY, multScale, multTranslation, popMatrix, pushMatrix, multRotationX, multRotationZ} from "./libs/stack.js";
 
 import * as SPHERE from './libs/objects/sphere.js';
 import * as CUBE from './libs/objects/cube.js';
 import * as CYLINDER from './libs/objects/cylinder.js';
 
-const VELOCITY_FACTOR = 1;
+const VELOCITY_FACTOR = 0.5;
 const MAXIMUM_VELOCITY_LEVEL = 8;
 const CEILING = 10;
 const FLOOR = 0;
@@ -17,11 +17,7 @@ let gl;
 let time = 0;           // Global simulation time
 let speed = 0.005;     // Speed (how many time units added to time on each render pass
 let mode;               // Drawing mode (gl.LINES or gl.TRIANGLES)
-let ex = 1;
-let ey = 1;
-let ez = 1;
-let view = 0;
-let s = 0.3;
+let s = 0.3;            //World Scale
 let motorVelocity = 0;
 let height = 0;
 let isMovingLeft = false;
@@ -29,6 +25,7 @@ let unitsAwayFromCenter = 3.0; // radius of helicopter s circular movement
 let leaningAngle = 0; //Not supposed to change
 let heliTime = 0;
 let bladeTime = 0;
+let mView = lookAt([1,1,1], [0,0,0], [0,1,0]);
 
 
 function setup(shaders)
@@ -47,54 +44,6 @@ function setup(shaders)
     resize_canvas();
     window.addEventListener("resize", resize_canvas);
 
-    function changeView() 
-    {
-
-        if(view == 0){
-            ex = 1;
-            ey = 1;
-            ez = 1;
-            view++;
-        }
-        else if (view == 1){
-            ex = 0;
-            ey = 0;
-            ez = 0;
-            view++;
-        }
-        else if (view == 2) {
-            ex = 1;
-            ey = 0;
-            ez = 1;
-            view++;
-        }
-        else if (view == 3) {
-            ex = 0;
-            ey = 1;
-            ez = 1;
-            view++;
-        }
-        else if (view == 4) {
-            ex = 1;
-            ey = 0;
-            ez = 1;
-            view++;
-        }
-        else if (view == 5) {
-            ex = 1;
-            ey = 1;
-            ez = 0;
-            view++;
-        }
-        else if (view == 6) {
-            ex = -1;
-            ey = 0.2;
-            ez = 0.6;
-            view = 0;
-        }
-
-    }
-
     document.onkeydown = function(event) {
         switch(event.key) {
             case "ArrowUp":
@@ -110,8 +59,17 @@ function setup(shaders)
             case "ArrowLeft":
                 isMovingLeft = true;
                break;
-            case "q":
-                changeView();
+            case "1":
+                mView = lookAt([1, 0.6, 0], [0, 0.6, 0.0], [0,1,0]);
+            break;
+            case "2":
+                mView = lookAt([0, 1.6, 0], [0, 0.6, 0.0], [0,0,-1]);
+            break;
+            case "3":
+                mView = lookAt([0, 0.6, 1], [0, 0.6, 0.0], [0,1,0]);
+            break;
+            case "4":
+                mView = lookAt([1,1,1], [0,0,0], [0,1,0]);
             break;
             case "r":
                 if(s-0.1 > 0.00001)
@@ -372,8 +330,8 @@ function setup(shaders)
                 multTranslation([unitsAwayFromCenter, 0, 0.0]); // Radius of Y rotation
                 multRotationY(-90); // Helicopter front in direction to the movement.
                 leaningAngle < 0 ? leaningAngle = 0 : leaningAngle = leaningAngle + 0.5;
-                multRotationX(leaningAngle);// Helicopter twisting sideways to make left movement realistic.
-                multRotationZ(leaningAngle); // Helicopter Z angle (30 dg maximum) that changes acording to speed
+                multRotationX(leaningAngle/MAXIMUM_VELOCITY_LEVEL * motorVelocity);// Helicopter twisting sideways to make left movement realistic.
+                multRotationZ(leaningAngle/MAXIMUM_VELOCITY_LEVEL * motorVelocity); // Helicopter Z angle (30 dg maximum) that changes acording to speed
                 console.log(leaningAngle);
                 //Stabilization
                 if(leaningAngle >= 30) //gradual acceleration
@@ -480,7 +438,7 @@ function setup(shaders)
 
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mProjection"), false, flatten(mProjection));
 
-        loadMatrix(lookAt([ex,ey,ez], [0,0,0], [0,1,0]));
+        loadMatrix(mView);
 
         pushMatrix();
             multScale([s, s, s]);
