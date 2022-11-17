@@ -1,5 +1,5 @@
 import { buildProgramFromSources, loadShadersFromURLS, setupWebGL } from "./libs/utils.js";
-import { ortho, lookAt, flatten, vec3, scale, rotateX } from "./libs/MV.js";
+import { ortho, lookAt, flatten, vec3, scale, rotateX, rotateZ } from "./libs/MV.js";
 import {modelView, loadMatrix, multRotationY, multScale, multTranslation, popMatrix, pushMatrix, multRotationX, multRotationZ} from "./libs/stack.js";
 
 import * as SPHERE from './libs/objects/sphere.js';
@@ -10,10 +10,10 @@ const VELOCITY_FACTOR = 0.5;
 const MAXIMUM_VELOCITY_LEVEL = 8;
 const CEILING = 10;
 const FLOOR = 0;
+let unitsAwayFromCenter = 5.0; // radius of helicopter s circular movement | CONSTANT VS VARIABLE
 
 /** @type WebGLRenderingContext */
 let gl;
-
 let time = 0;           // Global simulation time
 let speed = 0.005;     // Speed (how many time units added to time on each render pass
 let mode;               // Drawing mode (gl.LINES or gl.TRIANGLES)
@@ -21,7 +21,7 @@ let s = 0.3;            //World Scale
 let motorVelocity = 0;
 let height = 0;
 let isMovingLeft = false;
-let unitsAwayFromCenter = 3.0; // radius of helicopter s circular movement
+
 let leaningAngle = 0; //Not supposed to change
 let heliTime = 0;
 let bladeTime = 0;
@@ -60,7 +60,7 @@ function setup(shaders)
                 isMovingLeft = true;
                break;
             case "1":
-                mView = lookAt([1,1,1], [0,0,0], [0,1,0])
+                mView = lookAt([1,1,1], [0,0,0], [0,1,0]);
             break;
             case "2":
                 mView = lookAt([1, 0.6, 0], [0, 0.6, 0.0], [0,1,0]);
@@ -127,11 +127,13 @@ function setup(shaders)
 
     function Ground()
     {
+        pushMatrix();
         multTranslation([0.0, -0.025, 0.0]);
         multScale([50.0, 0.05 , 50.0]);
         
         uploadModelView();
         CUBE.draw(gl, program, mode);
+        popMatrix();
     }
 
     function Body()
@@ -319,6 +321,39 @@ function setup(shaders)
         popMatrix(); 
     }
 
+    function updateHeight()
+    {   
+        let heightFactorOnSpeed = height * 0.3; //Controls the blade speed according to the height
+        //(the highest the helicopter is, the fastest the blades spin)
+        if(motorVelocity == 0){
+           height -= 0.04 * VELOCITY_FACTOR;
+           if(height > 0) //When the helicopter is falling
+           bladeTime += heightFactorOnSpeed * speed * VELOCITY_FACTOR*3;
+        }else{
+            bladeTime += (heightFactorOnSpeed + 0.2) * speed * motorVelocity * VELOCITY_FACTOR*3; //Smoothing the blade stopping animation
+            console.log(bladeTime);
+        if(motorVelocity == 1)
+            height -= 0.01 * VELOCITY_FACTOR;
+        if(motorVelocity == 2)
+            height -= 0.005 * VELOCITY_FACTOR;
+        if(motorVelocity == 4)
+            height += 0.0025 * VELOCITY_FACTOR;
+        if(motorVelocity == 5)
+            height += 0.005 * VELOCITY_FACTOR;
+        if(motorVelocity == 6)
+            height += 0.0075 * VELOCITY_FACTOR;
+        if(motorVelocity == 7)
+            height += 0.01 * VELOCITY_FACTOR;
+        if(motorVelocity == 8)
+            height += 0.02 * VELOCITY_FACTOR;
+        }
+
+        if(height < FLOOR)
+            height = FLOOR;
+        else if (height > CEILING)
+            height = CEILING;
+    }
+
     function HelicopterMovement()
     {
             updateHeight();
@@ -371,60 +406,98 @@ function setup(shaders)
 
     }
 
-    function updateHeight()
-    {   
-        let heightFactorOnSpeed = height * 0.3; //Controls the blade speed according to the height
-        //(the highest the helicopter is, the fastest the blades spin)
-        if(motorVelocity == 0){
-           height -= 0.04 * VELOCITY_FACTOR;
-           if(height > 0) //When the helicopter is falling
-           bladeTime += heightFactorOnSpeed * speed * VELOCITY_FACTOR*3;
-        }else{
-            bladeTime += (heightFactorOnSpeed + 0.2) * speed * motorVelocity * VELOCITY_FACTOR*3; //Smoothing the blade stopping animation
-            console.log(bladeTime);
-        if(motorVelocity == 1)
-            height -= 0.01 * VELOCITY_FACTOR;
-        if(motorVelocity == 2)
-            height -= 0.005 * VELOCITY_FACTOR;
-        if(motorVelocity == 4)
-            height += 0.0025 * VELOCITY_FACTOR;
-        if(motorVelocity == 5)
-            height += 0.005 * VELOCITY_FACTOR;
-        if(motorVelocity == 6)
-            height += 0.0075 * VELOCITY_FACTOR;
-        if(motorVelocity == 7)
-            height += 0.01 * VELOCITY_FACTOR;
-        if(motorVelocity == 8)
-            height += 0.02 * VELOCITY_FACTOR;
-        }
-
-        if(height < FLOOR)
-            height = FLOOR;
-        else if (height > CEILING)
-            height = CEILING;
+    function CargoBoxSide() 
+    {
+        multTranslation([0.0, 0.425, 0.52]);
+        multScale([1.0,0.15,0.04]);
+        uploadModelView();
+        CUBE.draw(gl, program, mode);
     }
+
+    function Plus()
+    {
+            pushMatrix();
+                multTranslation([0.0, -0.2125, 0.0]);
+                multScale([1.0,0.5,1.0]);
+                CargoBoxSide();
+            popMatrix();
+            pushMatrix();
+                multTranslation([0.2125,0.0, 0.0]);
+                multRotationZ(90);
+                multScale([1.0,0.5,1.0]);
+                CargoBoxSide();
+            popMatrix();
+    }
+
+    function CargoBoxFaceSides() 
+    {
+        pushMatrix();
+            CargoBoxSide();
+        popMatrix();
+        pushMatrix();
+            multTranslation([0.0,-0.85,0.0]);
+            CargoBoxSide();
+        popMatrix();
+        pushMatrix();
+            multRotationZ(90);
+            CargoBoxSide();
+        popMatrix();
+        pushMatrix();
+            multRotationZ(-90);
+            CargoBoxSide();
+        popMatrix();
+        pushMatrix();
+            Plus();
+        popMatrix();
+        
+    }
+
+    function CargoBody()
+    {
+            uploadModelView();
+            CUBE.draw(gl, program, mode);
+    }
+
+    function CargoBox()
+    {
+        pushMatrix();
+            multTranslation([0.0, 0.5, 0.0]);
+            multScale([0.2,0.2,0.2]);
+            pushMatrix();
+                CargoBody();
+            popMatrix();
+            gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.3, 0.15, 0.0)); //Sides color
+            pushMatrix();
+                CargoBoxFaceSides();
+            popMatrix();
+        popMatrix();
+    }
+
 
     function World()
     {
-        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.08, 0.22, 0.2));
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(1, 1, 1)); //Helicopter color
 
-        pushMatrix();
-            Helicopter();
-        popMatrix();
+        Helicopter();
+
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.6, 0.3, 0.0)); //Box color
+
+        CargoBox();
+        
 
         gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(.2, .2, .2));
 
-        pushMatrix();
+        //reference box
+        /*pushMatrix();
             multTranslation([0.0, 0.5, 0.0]);
             uploadModelView();
             CUBE.draw(gl, program, mode);
         popMatrix();
+        */
 
-        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.08, 0.28, 0.2));
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.08, 0.28, 0.2)); //Ground color
 
-        pushMatrix();
-            Ground();
-        popMatrix();
+        Ground();
     }
 
     function render()
