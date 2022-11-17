@@ -60,16 +60,17 @@ function setup(shaders)
                 isMovingLeft = true;
                break;
             case "1":
-                mView = lookAt([1, 0.6, 0], [0, 0.6, 0.0], [0,1,0]);
+                mView = lookAt([1,1,1], [0,0,0], [0,1,0])
             break;
             case "2":
-                mView = lookAt([0, 1.6, 0], [0, 0.6, 0.0], [0,0,-1]);
+                mView = lookAt([1, 0.6, 0], [0, 0.6, 0.0], [0,1,0]);
             break;
             case "3":
-                mView = lookAt([0, 0.6, 1], [0, 0.6, 0.0], [0,1,0]);
+                mView = lookAt([0, 1.6, 0], [0, 0.6, 0.0], [0,0,-1]);
             break;
             case "4":
-                mView = lookAt([1,1,1], [0,0,0], [0,1,0]);
+                mView = lookAt([0, 0.6, 1], [0, 0.6, 0.0], [0,1,0]);
+                ;
             break;
             case "r":
                 if(s-0.1 > 0.00001)
