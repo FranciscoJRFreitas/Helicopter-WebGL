@@ -7,3 +7,21 @@ body {
     overflow: hidden; /*  Disable scrollbars */
     background-color: black;
 }
+
+#info {
+    position: absolute;
+    top: 8px;
+    right: 30px;
+    font-size: 18px;
+    color: black;
+}
+
+#box {
+    position: absolute;
+    background-color: rgb(6, 148, 180);
+    width: 100px;
+    border: 5px solid #D9514EFF;
+    top: 26px;
+    right: 15px;
+    padding: 10px;
+}

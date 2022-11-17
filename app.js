@@ -1,21 +1,20 @@
 import { buildProgramFromSources, loadShadersFromURLS, setupWebGL } from "./libs/utils.js";
-import { ortho, lookAt, flatten, vec3 } from "./libs/MV.js";
+import { ortho, lookAt, flatten, vec3, scale } from "./libs/MV.js";
 import {modelView, loadMatrix, multRotationY, multScale, multTranslation, popMatrix, pushMatrix, multRotationX, multRotationZ} from "./libs/stack.js";
 
 import * as SPHERE from './libs/objects/sphere.js';
 import * as CUBE from './libs/objects/cube.js';
 import * as CYLINDER from './libs/objects/cylinder.js';
 
-const VELOCITY_FACTOR = 0.625;
+const VELOCITY_FACTOR = 0.825;
 const MAXIMUM_VELOCITY_LEVEL = 8;
 
 /** @type WebGLRenderingContext */
 let gl;
 
-let time = 0;           // Global simulation time in days
-let speed = 0.005;     // Speed (how many days added to time on each render pass
+let time = 0;           // Global simulation time
+let speed = 0.005;     // Speed (how many time units added to time on each render pass
 let mode;               // Drawing mode (gl.LINES or gl.TRIANGLES)
-let animation = true;   // Animation is running
 let ex = 1;
 let ey = 1;
 let ez = 1;
@@ -24,7 +23,10 @@ let s = 0.3;
 let motorVelocity = 0;
 let height = 0;
 let isMovingLeft = false;
-let timeMoving = 0;
+let unitsAwayFromCenter = 3.0; // radius of helicopter s circular movement
+let leaningAngle = 0; //Not supposed to change
+let heliTime = 0;
+let bladeTime = 0;
 
 
 function setup(shaders)
@@ -154,7 +156,7 @@ function setup(shaders)
         aspect = canvas.width / canvas.height;
 
         gl.viewport(0,0,canvas.width, canvas.height);
-        mProjection = ortho(-aspect, aspect, -1, 1,-3,3);
+        mProjection = ortho(-aspect, aspect, -1, 1, -3, 3);
     }
 
     function uploadModelView()
@@ -339,13 +341,13 @@ function setup(shaders)
             TailMast();
         popMatrix();
         pushMatrix();
-            multRotationY(360 * time * motorVelocity * VELOCITY_FACTOR);
+            multRotationY(360 * bladeTime);
             Blades();
             Mast();
         popMatrix();
         pushMatrix();
             multTranslation([1.2, 0.62, 0.13]);
-            multRotationZ(360 * time * motorVelocity * VELOCITY_FACTOR);
+            multRotationZ(360 * bladeTime);
             TailBlades();
         popMatrix();
         pushMatrix();
@@ -356,42 +358,45 @@ function setup(shaders)
         popMatrix(); 
     }
 
-    let unitsAwayFromCenter = 2.0;
-    let zRotationAngle = 0;
-
-
     function HelicopterMovement()
     {
-        
             updateHeight();
             multTranslation([unitsAwayFromCenter, height, 0.0]); // Initial Helicopter pos
             multRotationY(-90);
             if(isMovingLeft && height > 0) { // Can move only when it s in the air and key is pressed.
-                timeMoving += speed * motorVelocity * 0.2;
+                heliTime += speed * motorVelocity * VELOCITY_FACTOR/3;
                 multTranslation([0.0, 0.0, unitsAwayFromCenter]); // Translation to rotation on Y.
-                multRotationY(360 * timeMoving);
+                multRotationY(360 * heliTime);
                 multTranslation([unitsAwayFromCenter, 0, 0.0]); // Radius of Y rotation
                 multRotationY(-90); // Helicopter front in direction to the movement.
-                zRotationAngle = zRotationAngle + 0.5;
-                multRotationX(zRotationAngle/2);// Helicopter twisting sideways to make left movement realistic.
-                multRotationZ(zRotationAngle); // Helicopter Z angle (30 dg maximum) that changes acording to speed
-                console.log(zRotationAngle);
-                if(zRotationAngle >= 30)
-                    zRotationAngle = zRotationAngle - 0.5;
+                leaningAngle < 0 ? leaningAngle = 0 : leaningAngle = leaningAngle + 0.5;
+                multRotationX(leaningAngle);// Helicopter twisting sideways to make left movement realistic.
+                multRotationZ(leaningAngle); // Helicopter Z angle (30 dg maximum) that changes acording to speed
+                console.log(leaningAngle);
+                //Stabilization
+                if(leaningAngle >= 30) //gradual acceleration
+                    leaningAngle = leaningAngle - 0.5;
+                if(leaningAngle >= 1 && height <= 0.27) //soft landing
+                    leaningAngle--;
+                    if(motorVelocity <= 1)
+                        leaningAngle <= 0 ? leaningAngle = -0.1 : leaningAngle = leaningAngle - 3;
+                console.log(height);
+
             }
             else{
                 multTranslation([0.0, 0.0, unitsAwayFromCenter]);
-                multRotationY(360 * timeMoving);
+                multRotationY(360 * heliTime);
                 multTranslation([unitsAwayFromCenter, 0, 0.0]);
                 multRotationY(-90);
-                if(zRotationAngle > 0){
-                    zRotationAngle = zRotationAngle - 0.5;
-                    multRotationX(zRotationAngle/2);
-                    multRotationZ(zRotationAngle);
-                    if(zRotationAngle <= 0)
-                        zRotationAngle = zRotationAngle + 0.5;
+                //Stabilization
+                if(leaningAngle > 0){
+                    leaningAngle = leaningAngle - 0.5;
+                    multRotationX(leaningAngle);
+                    multRotationZ(leaningAngle);
+                    if(leaningAngle >= 1 && height <= 0.27) //soft landing
+                        leaningAngle--;
                 } else
-                    zRotationAngle = 0;
+                    leaningAngle = 0;
                 
             }
     }
@@ -407,8 +412,13 @@ function setup(shaders)
 
     function updateHeight()
     {   
-        if(motorVelocity == 0)
+        if(motorVelocity == 0){
            height -= 0.04;
+           if(height > 0) //When the helicopter is falling
+           bladeTime += (height * 0.3 + 0.2) * speed * VELOCITY_FACTOR;
+        }else{
+            bladeTime += speed * motorVelocity * VELOCITY_FACTOR; //Smoothing the blade stopping animation
+            console.log(bladeTime);
         if(motorVelocity == 1)
             height -= 0.01;
         if(motorVelocity == 2)
@@ -423,6 +433,7 @@ function setup(shaders)
             height += 0.01;
         if(motorVelocity == 8)
             height += 0.02;
+        }
 
         if(height < 0)
             height = 0;
@@ -438,7 +449,7 @@ function setup(shaders)
             Helicopter();
         popMatrix();
 
-        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.3, 0.6, 0.4));
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(.2, .2, .2));
 
         pushMatrix();
             multTranslation([0.0, 0.5, 0.0]);
@@ -455,7 +466,8 @@ function setup(shaders)
 
     function render()
     {
-        if(animation) time += speed;
+        document.getElementById("height").innerHTML = Number((height).toFixed(1));;
+        time += speed;
         window.requestAnimationFrame(render);
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
