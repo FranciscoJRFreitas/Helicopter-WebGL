@@ -6,8 +6,10 @@ import * as SPHERE from './libs/objects/sphere.js';
 import * as CUBE from './libs/objects/cube.js';
 import * as CYLINDER from './libs/objects/cylinder.js';
 
-const VELOCITY_FACTOR = 0.825;
+const VELOCITY_FACTOR = 1;
 const MAXIMUM_VELOCITY_LEVEL = 8;
+const CEILING = 10;
+const FLOOR = 0;
 
 /** @type WebGLRenderingContext */
 let gl;
@@ -363,8 +365,8 @@ function setup(shaders)
             updateHeight();
             multTranslation([unitsAwayFromCenter, height, 0.0]); // Initial Helicopter pos
             multRotationY(-90);
-            if(isMovingLeft && height > 0) { // Can move only when it s in the air and key is pressed.
-                heliTime += speed * motorVelocity * VELOCITY_FACTOR/3;
+            if(isMovingLeft && height > FLOOR) { // Can move only when it s in the air and key is pressed.
+                heliTime += speed * (motorVelocity + 1) * VELOCITY_FACTOR/5; //(motorVelocity + 1) so that it can move left while falling
                 multTranslation([0.0, 0.0, unitsAwayFromCenter]); // Translation to rotation on Y.
                 multRotationY(360 * heliTime);
                 multTranslation([unitsAwayFromCenter, 0, 0.0]); // Radius of Y rotation
@@ -378,7 +380,7 @@ function setup(shaders)
                     leaningAngle = leaningAngle - 0.5;
                 if(leaningAngle >= 1 && height <= 0.27) //soft landing
                     leaningAngle--;
-                    if(motorVelocity <= 1)
+                    if(motorVelocity <= 1) //So that the helicopter model doesnt enter the ground.
                         leaningAngle <= 0 ? leaningAngle = -0.1 : leaningAngle = leaningAngle - 3;
                 console.log(height);
 
@@ -388,7 +390,7 @@ function setup(shaders)
                 multRotationY(360 * heliTime);
                 multTranslation([unitsAwayFromCenter, 0, 0.0]);
                 multRotationY(-90);
-                //Stabilization
+                //Stabilization mechanism
                 if(leaningAngle > 0){
                     leaningAngle = leaningAngle - 0.5;
                     multRotationX(leaningAngle);
@@ -412,33 +414,35 @@ function setup(shaders)
 
     function updateHeight()
     {   
+        let heightFactorOnSpeed = height * 0.3; //Controls the blade speed according to the height
+        //(the highest the helicopter is, the fastest the blades spin)
         if(motorVelocity == 0){
-           height -= 0.04;
+           height -= 0.04 * VELOCITY_FACTOR;
            if(height > 0) //When the helicopter is falling
-           bladeTime += (height * 0.3 + 0.2) * speed * VELOCITY_FACTOR;
+           bladeTime += heightFactorOnSpeed * speed * VELOCITY_FACTOR*3;
         }else{
-            bladeTime += speed * motorVelocity * VELOCITY_FACTOR; //Smoothing the blade stopping animation
+            bladeTime += (heightFactorOnSpeed + 0.2) * speed * motorVelocity * VELOCITY_FACTOR*3; //Smoothing the blade stopping animation
             console.log(bladeTime);
         if(motorVelocity == 1)
-            height -= 0.01;
+            height -= 0.01 * VELOCITY_FACTOR;
         if(motorVelocity == 2)
-            height -= 0.005;
+            height -= 0.005 * VELOCITY_FACTOR;
         if(motorVelocity == 4)
-            height += 0.0025;
+            height += 0.0025 * VELOCITY_FACTOR;
         if(motorVelocity == 5)
-            height += 0.005;
+            height += 0.005 * VELOCITY_FACTOR;
         if(motorVelocity == 6)
-            height += 0.0075;
+            height += 0.0075 * VELOCITY_FACTOR;
         if(motorVelocity == 7)
-            height += 0.01;
+            height += 0.01 * VELOCITY_FACTOR;
         if(motorVelocity == 8)
-            height += 0.02;
+            height += 0.02 * VELOCITY_FACTOR;
         }
 
-        if(height < 0)
-            height = 0;
-        else if (height > 20)
-            height = 20;
+        if(height < FLOOR)
+            height = FLOOR;
+        else if (height > CEILING)
+            height = CEILING;
     }
 
     function World()
