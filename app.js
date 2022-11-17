@@ -7,7 +7,7 @@ import * as CUBE from './libs/objects/cube.js';
 import * as CYLINDER from './libs/objects/cylinder.js';
 
 const VELOCITY_FACTOR = 0.625;
-const VELOCITY_LEVEL = 8;
+const MAXIMUM_VELOCITY_LEVEL = 8;
 
 /** @type WebGLRenderingContext */
 let gl;
@@ -24,7 +24,7 @@ let s = 0.3;
 let motorVelocity = 0;
 let height = 0;
 let isMovingLeft = false;
-let timeAtStop = 0;
+let timeMoving = 0;
 
 
 function setup(shaders)
@@ -94,7 +94,7 @@ function setup(shaders)
     document.onkeydown = function(event) {
         switch(event.key) {
             case "ArrowUp":
-                if(motorVelocity < VELOCITY_LEVEL) {
+                if(motorVelocity < MAXIMUM_VELOCITY_LEVEL) {
                     motorVelocity++;
                 }
             break;
@@ -324,7 +324,7 @@ function setup(shaders)
         popMatrix();
     }
 
-    function helicopter() 
+    function HelicopterParts() 
     {
         pushMatrix();
             Body();
@@ -356,10 +356,59 @@ function setup(shaders)
         popMatrix(); 
     }
 
+    let unitsAwayFromCenter = 2.0;
+    let zRotationAngle = 0;
+
+
+    function HelicopterMovement()
+    {
+        
+            updateHeight();
+            multTranslation([unitsAwayFromCenter, height, 0.0]); // Initial Helicopter pos
+            multRotationY(-90);
+            if(isMovingLeft && height > 0) { // Can move only when it s in the air and key is pressed.
+                timeMoving += speed * motorVelocity * 0.2;
+                multTranslation([0.0, 0.0, unitsAwayFromCenter]); // Translation to rotation on Y.
+                multRotationY(360 * timeMoving);
+                multTranslation([unitsAwayFromCenter, 0, 0.0]); // Radius of Y rotation
+                multRotationY(-90); // Helicopter front in direction to the movement.
+                zRotationAngle = zRotationAngle + 0.5;
+                multRotationX(zRotationAngle/2);// Helicopter twisting sideways to make left movement realistic.
+                multRotationZ(zRotationAngle); // Helicopter Z angle (30 dg maximum) that changes acording to speed
+                console.log(zRotationAngle);
+                if(zRotationAngle >= 30)
+                    zRotationAngle = zRotationAngle - 0.5;
+            }
+            else{
+                multTranslation([0.0, 0.0, unitsAwayFromCenter]);
+                multRotationY(360 * timeMoving);
+                multTranslation([unitsAwayFromCenter, 0, 0.0]);
+                multRotationY(-90);
+                if(zRotationAngle > 0){
+                    zRotationAngle = zRotationAngle - 0.5;
+                    multRotationX(zRotationAngle/2);
+                    multRotationZ(zRotationAngle);
+                    if(zRotationAngle <= 0)
+                        zRotationAngle = zRotationAngle + 0.5;
+                } else
+                    zRotationAngle = 0;
+                
+            }
+    }
+
+    function Helicopter()
+    {
+        pushMatrix();
+            HelicopterMovement();
+            HelicopterParts();
+        popMatrix();
+
+    }
+
     function updateHeight()
     {   
         if(motorVelocity == 0)
-           height -= 0.08;
+           height -= 0.04;
         if(motorVelocity == 1)
             height -= 0.01;
         if(motorVelocity == 2)
@@ -386,29 +435,13 @@ function setup(shaders)
         gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.08, 0.22, 0.2));
 
         pushMatrix();
-            updateHeight();
-            multTranslation([2.0, height, 0.0]);
-            multRotationY(-90);
-            if(isMovingLeft && height > 0){
-                timeAtStop += speed;
-                multTranslation([0.0, 0.0, 2.0]);
-                multRotationY(360 * timeAtStop);
-                multTranslation([2.0, 0, 0.0]);
-                multRotationY(-90);
-            }
-            else{
-                multTranslation([0.0, 0.0, 2.0]);
-                multRotationY(360 * timeAtStop);
-                multTranslation([2.0, 0, 0.0]);
-                multRotationY(-90);
-            }
-
-            helicopter();
+            Helicopter();
         popMatrix();
 
         gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.3, 0.6, 0.4));
 
         pushMatrix();
+            multTranslation([0.0, 0.5, 0.0]);
             uploadModelView();
             CUBE.draw(gl, program, mode);
         popMatrix();
