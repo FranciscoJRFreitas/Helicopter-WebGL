@@ -99,7 +99,7 @@ function setup(shaders)
                 isMovingLeft = false;
             break;
             case " ":
-                boxes.push({height: height, time: time, boxTime: 0, reachedGround: 1, reachGroundTime: 0}); //reachedGround: variable to make boxes stop at y = 0.
+                boxes.push({height: height, heliTime: heliTime, boxTime: 0, reachedGround: 1, reachGroundTime: 0, motorVelocity: motorVelocity}); //reachedGround: variable to make boxes stop at y = 0.
                 boxesNum++
             break;
         }
@@ -131,6 +131,7 @@ function setup(shaders)
     }
 
     const BOX_GRAVITY = 0.5;
+    let boxThrowMovement = 0;
     function DropBox()
     {
         for(let b of boxes){
@@ -138,13 +139,14 @@ function setup(shaders)
             if(b.boxTime - SPEED <= 5 * SECOND) {
             pushMatrix();
                 b.height = b.height - b.boxTime**2 * BOX_GRAVITY;
-                if(b.height <= 0.1) //If box reaches ground
+                if(b.height <= 0.0) //If box reaches ground
                     b.reachedGround = 0;
                 else
                     b.reachGroundTime += SPEED; //reachGroundTime stops incrementing when it reaches the ground
-                multTranslation([0.0, ((b.height > 0.4 ? b.height - 0.4 : b.height)) * b.reachedGround , unitsAwayFromCenter + b.reachGroundTime]);
-                multRotationY(90 *b.reachGroundTime * b.reachedGround);
-                multRotationX(90 *b.reachGroundTime * b.reachedGround);
+                multRotationY((360 * b.heliTime) - 45);
+                boxThrowMovement = (unitsAwayFromCenter - 1.4) + (b.reachGroundTime * b.motorVelocity)/3;
+                multTranslation([boxThrowMovement, b.height * b.reachedGround , boxThrowMovement]);
+                multRotationY(90 * b.reachGroundTime);
                 CargoBox();
             popMatrix();
             }
@@ -528,12 +530,15 @@ function setup(shaders)
 
     function World()
     {
-        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(1, 1, 1)); //Helicopter color
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(1, 0.0, 1.0)); //Helicopter color
 
         Helicopter();
 
-        CargoBox();
-        DropBox();
+        pushMatrix();
+            multTranslation([0.0,-0.4,0.0]);
+            CargoBox();
+            DropBox();
+        popMatrix();
 
         gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(.2, .2, .2));
 
