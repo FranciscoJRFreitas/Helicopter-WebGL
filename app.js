@@ -12,7 +12,7 @@ const CEILING = 10;
 const FLOOR = 0;
 const SPEED = 0.005; // Speed (how many time units added to time on each render pass
 const SECOND = 60 * SPEED; //Speed increments one time per second.
-let unitsAwayFromCenter = 5.0; // radius of helicopter s circular movement | CONSTANT VS VARIABLE
+let unitsAwayFromCenter = 2.0; // radius of helicopter s circular movement | CONSTANT VS VARIABLE
 
 /** @type WebGLRenderingContext */
 let gl;
@@ -144,7 +144,7 @@ function setup(shaders)
                 else
                     b.reachGroundTime += SPEED; //reachGroundTime stops incrementing when it reaches the ground
                 multRotationY((360 * b.heliTime) - 45);
-                boxThrowMovement = (unitsAwayFromCenter - 1.4) + (b.reachGroundTime * b.motorVelocity)/3;
+                boxThrowMovement = (unitsAwayFromCenter - unitsAwayFromCenter/3.5) + (b.reachGroundTime * b.motorVelocity)/3;
                 multTranslation([boxThrowMovement, b.height * b.reachedGround , boxThrowMovement]);
                 multRotationY(90 * b.reachGroundTime);
                 CargoBox();
