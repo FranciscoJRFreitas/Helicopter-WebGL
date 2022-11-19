@@ -47,6 +47,22 @@ function setup(shaders)
     resize_canvas();
     window.addEventListener("resize", resize_canvas);
 
+    document.getElementById("normalView").onclick = function changeNormalView() {
+        mView = lookAt([1,1,1], [0,0,0], [0,1,0]);
+    }
+
+    document.getElementById("fronView").onclick = function changeFrontView() {
+        mView = lookAt([1, 0.6, 0], [0, 0.6, 0.0], [0,1,0]);
+    }
+
+    document.getElementById("topView").onclick = function changeTopView() {
+        mView = lookAt([0, 1.6, 0], [0, 0.6, 0.0], [0,0,-1]);
+    }
+
+    document.getElementById("rightSideView").onclick = function changeRightSideView() {
+        mView = lookAt([0, 0.6, 1], [0, 0.6, 0.0], [0,1,0]);
+    }
+
     document.onkeydown = function(event) {
         switch(event.key) {
             case "ArrowUp":
@@ -62,19 +78,6 @@ function setup(shaders)
             case "ArrowLeft":
                 isMovingLeft = true;
                break;
-            case "1":
-                mView = lookAt([1,1,1], [0,0,0], [0,1,0]);
-            break;
-            case "2":
-                mView = lookAt([1, 0.6, 0], [0, 0.6, 0.0], [0,1,0]);
-            break;
-            case "3":
-                mView = lookAt([0, 1.6, 0], [0, 0.6, 0.0], [0,0,-1]);
-            break;
-            case "4":
-                mView = lookAt([0, 0.6, 1], [0, 0.6, 0.0], [0,1,0]);
-                ;
-            break;
             case "r":
                 if(s-0.1 > 0.00001)
                     s -= 0.1;

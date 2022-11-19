@@ -27,3 +27,8 @@ body {
     right: 15px;
     padding: 10px;
 }
+
+#cameraControl {
+    position: absolute;
+    top: 8px;
+}
