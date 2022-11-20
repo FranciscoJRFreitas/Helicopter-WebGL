@@ -535,7 +535,7 @@ function setup(shaders)
     {
         gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.3, 0.15, 0.0)); //Sides color
         pushMatrix();
-            multTranslation([1.0,0.735,0.0]);
+            multTranslation([0.8,0.735,0.0]);
             multRotationZ(45);
             multScale([0.075,2.0,0.075]);
             uploadModelView();
