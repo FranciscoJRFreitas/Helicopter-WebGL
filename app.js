@@ -1,5 +1,5 @@
 import { buildProgramFromSources, loadShadersFromURLS, setupWebGL } from "./libs/utils.js";
-import { ortho, lookAt, flatten, vec3, scale, rotateX, rotateZ } from "./libs/MV.js";
+import { ortho, lookAt, flatten, vec3, scale, rotateX, rotateZ, rotateY, rotate, mult } from "./libs/MV.js";
 import {modelView, loadMatrix, multRotationY, multScale, multTranslation, popMatrix, pushMatrix, multRotationX, multRotationZ} from "./libs/stack.js";
 
 import * as SPHERE from './libs/objects/sphere.js';
@@ -12,7 +12,7 @@ const CEILING = 10;
 const FLOOR = 0;
 const SPEED = 0.005; // Speed (how many time units added to time on each render pass
 const SECOND = 60 * SPEED; //Speed increments one time per second.
-let unitsAwayFromCenter = 2.0; // radius of helicopter s circular movement | CONSTANT VS VARIABLE
+let unitsAwayFromCenter = 4.0; // radius of helicopter s circular movement | CONSTANT VS VARIABLE
 
 /** @type WebGLRenderingContext */
 let gl;
@@ -22,7 +22,6 @@ let s = 0.3;            //World Scale
 let motorVelocity = 0;
 let height = 0;
 let isMovingLeft = false;
-let boxesNum = 0;
 let boxes = [];
 
 let leaningAngle = 0; //Not supposed to change
@@ -63,6 +62,17 @@ function setup(shaders)
         mView = lookAt([0, 0.6, 1], [0, 0.6, 0.0], [0,1,0]);
     }
 
+    document.getElementById("cameraRotation").oninput = function Rotate() {
+        let angleX = document.getElementById("xRotation").value;
+        let angleY = document.getElementById("yRotation").value;
+        
+        mView = mult(lookAt([1, 0.6, 0], [0, 0.6, 0.0], [0,1,0]), mult(rotateY(angleY), rotateX(angleX)));
+    }
+
+    document.getElementById("cameraScale").oninput = function Rotate() {
+        s = document.getElementById("scale").value;
+    }
+
     document.onkeydown = function(event) {
         switch(event.key) {
             case "ArrowUp":
@@ -78,14 +88,6 @@ function setup(shaders)
             case "ArrowLeft":
                 isMovingLeft = true;
                break;
-            case "r":
-                if(s-0.1 > 0.00001)
-                    s -= 0.1;
-            break;
-            case "f":
-                if(s+0.05 < 10)
-                    s += 0.05;
-            break;
             case "s":
                 mode = gl.TRIANGLES;
             break;
@@ -103,7 +105,6 @@ function setup(shaders)
             break;
             case " ":
                 boxes.push({height: height, heliTime: heliTime, boxTime: 0, reachedGround: 1, reachGroundTime: 0, motorVelocity: motorVelocity}); //reachedGround: variable to make boxes stop at y = 0.
-                boxesNum++
             break;
         }
     }
@@ -149,7 +150,7 @@ function setup(shaders)
                 multRotationY((360 * b.heliTime) - 45);
                 boxThrowMovement = (unitsAwayFromCenter - unitsAwayFromCenter/3.5) + (b.reachGroundTime * b.motorVelocity)/3;
                 multTranslation([boxThrowMovement, b.height * b.reachedGround , boxThrowMovement]);
-                multRotationY(90 * b.reachGroundTime);
+                multRotationY(180 * b.reachGroundTime);
                 CargoBox();
             popMatrix();
             }

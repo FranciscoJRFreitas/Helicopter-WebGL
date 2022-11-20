@@ -32,3 +32,17 @@ body {
     position: absolute;
     top: 8px;
 }
+
+#cameraRotation {
+    position: absolute;
+    display: flex;
+    top: 8px;
+    left: 25%;
+    
+}
+
+#cameraScale {
+    position: absolute;
+    top: 8px;
+    left: 45%;
+}
