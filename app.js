@@ -1,5 +1,5 @@
 import { buildProgramFromSources, loadShadersFromURLS, setupWebGL } from "./libs/utils.js";
-import { ortho, lookAt, flatten, vec3, scale, rotateX, rotateZ, rotateY, rotate, mult } from "./libs/MV.js";
+import { ortho, lookAt, flatten, vec3, scale, rotateX, rotateZ, rotateY, rotate, mult, translate } from "./libs/MV.js";
 import {modelView, loadMatrix, multRotationY, multScale, multTranslation, popMatrix, pushMatrix, multRotationX, multRotationZ} from "./libs/stack.js";
 
 import * as SPHERE from './libs/objects/sphere.js';
@@ -531,6 +531,120 @@ function setup(shaders)
         popMatrix();
     }
 
+    function WallSupport()
+    {
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.3, 0.15, 0.0)); //Sides color
+        pushMatrix();
+            multTranslation([1.0,0.735,0.0]);
+            multRotationZ(45);
+            multScale([0.075,2.0,0.075]);
+            uploadModelView();
+            CUBE.draw(gl, program, mode);
+        popMatrix();
+    }
+
+    function WallStake()
+    {
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(.2, .2, .2));
+        pushMatrix();
+            multTranslation([0.0,1.25,0.0]);
+            multScale([0.075,2.5,0.075]);
+            uploadModelView();
+            CUBE.draw(gl, program, mode);
+        popMatrix();
+    }
+
+    function WallPart()
+    {
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(.2, .2, .2));
+        pushMatrix();
+            multTranslation([0.0,1.0,0.0]);
+            multScale([0.3,2.0,3.0]);
+            uploadModelView();
+            CUBE.draw(gl, program, mode);
+        popMatrix();
+    }
+
+    function Wall()
+    {
+        pushMatrix();
+            WallPart();
+        popMatrix();
+        pushMatrix();
+            multTranslation([0.0,0.0,3.0]);
+            WallPart();
+            WallSupport();
+        popMatrix();
+        pushMatrix();
+            multTranslation([0.0,0.0,-3.0]);
+            WallPart();
+            WallSupport();
+        popMatrix();
+        pushMatrix();
+            multTranslation([0.0,0.0,6.0]);
+            WallPart();
+            WallStake();
+            WallSupport();
+        popMatrix();
+        pushMatrix();
+            multTranslation([0.0,0.0,-6.0]);
+            WallPart();
+            WallStake();
+            WallSupport();
+        popMatrix();
+        pushMatrix();
+            multTranslation([0.24,0.0,8.8]);
+            multRotationY(10);
+            WallPart();
+            WallStake();
+            WallSupport();
+        popMatrix();
+        pushMatrix();
+            multTranslation([0.24,0.0,-8.8]);
+            multRotationY(-10);
+            WallPart();
+            WallStake();
+            WallSupport();
+        popMatrix();
+        pushMatrix();
+            multTranslation([0.72,0.0,11.4]);
+            multRotationY(10);
+            WallPart();
+            WallSupport();
+        popMatrix();
+        pushMatrix();
+            multTranslation([0.72,0.0,-11.6]);
+            multRotationY(-10);
+            WallPart();
+            WallSupport();
+        popMatrix();
+        pushMatrix();
+            multTranslation([1.5,0.0,14.2]);
+            multRotationY(20);
+            pushMatrix();
+                multTranslation([0.05,0.0,9.0])
+                multScale([1.8,1.15,1.8]);
+                WallStake();
+                WallSupport();
+                popMatrix();
+            multScale([1.0,1.0,4.35]);
+            multTranslation([0.0,0.0,1.13]);
+            WallPart();
+        popMatrix();
+        pushMatrix();
+            multTranslation([1.4,0.0,-14.2]);
+            multRotationY(-20);
+                pushMatrix();
+                multTranslation([0.05,0.0,-9.0])
+                multScale([1.8,1.15,1.8]);
+                WallStake();
+                WallSupport();
+                popMatrix();
+            multScale([1.0,1.0,4.35]);
+            multTranslation([0.03,0.0,-1.15]);
+            WallPart();
+        popMatrix();
+    }
 
     function World()
     {
@@ -540,13 +654,17 @@ function setup(shaders)
 
         pushMatrix();
             multTranslation([0.0,-0.4,0.0]);
-            CargoBox();
             DropBox();
         popMatrix();
 
         gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(.2, .2, .2));
 
-        //reference box
+        pushMatrix();
+            multTranslation([6.0,0.0,0.0]);
+            WallStake();
+            Wall();
+        popMatrix();
+
         /*pushMatrix();
             multTranslation([0.0, 0.5, 0.0]);
             uploadModelView();
@@ -554,7 +672,7 @@ function setup(shaders)
         popMatrix();
         */
 
-        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.08, 0.28, 0.2)); //Ground color
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.3, 0.3, 0.3)); //Ground color
 
         Ground();
     }
