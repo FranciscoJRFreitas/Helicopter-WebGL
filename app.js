@@ -12,13 +12,14 @@ const CEILING = 10;
 const FLOOR = 0;
 const SPEED = 0.005; // Speed (how many time units added to time on each render pass
 const SECOND = 60 * SPEED; //Speed increments one time per second.
+const SCALE = 0.16; //World Scale
 let unitsAwayFromCenter = 4.0; // radius of helicopter s circular movement | CONSTANT VS VARIABLE
 
 /** @type WebGLRenderingContext */
 let gl;
 let time = 0;           // Global simulation time
 let mode;               // Drawing mode (gl.LINES or gl.TRIANGLES)
-let s = 0.3;            //World Scale
+let s = SCALE;            
 let motorVelocity = 0;
 let height = 0;
 let isMovingLeft = false;
@@ -39,38 +40,62 @@ function setup(shaders)
 
     let program = buildProgramFromSources(gl, shaders["shader.vert"], shaders["shader.frag"]);
 
-    let mProjection = ortho(-aspect, aspect, -1, 1,-3,3);
+    let mProjection = ortho(-aspect, aspect, -1, 1,-5,5);
 
     mode = gl.TRIANGLES; 
 
     resize_canvas();
     window.addEventListener("resize", resize_canvas);
 
+    document.getElementById("x").innerHTML = 0;
+    document.getElementById("y").innerHTML = 0;
+    document.getElementById("scale").innerHTML = SCALE;
+    document.getElementById("s").innerHTML = s / SCALE * 100;
+
     document.getElementById("normalView").onclick = function changeNormalView() {
-        mView = lookAt([1,1,1], [0,0,0], [0,1,0]);
+        mView = lookAt([1,1,1], [0,0.1,0], [0,1,0]);
+        document.getElementById("x").innerHTML = 0;
+        document.getElementById("y").innerHTML = 0;
+        document.getElementById("xRotation").value = 0;
+        document.getElementById("yRotation").value = 0;
     }
 
-    document.getElementById("fronView").onclick = function changeFrontView() {
-        mView = lookAt([1, 0.6, 0], [0, 0.6, 0.0], [0,1,0]);
+    document.getElementById("frontView").onclick = function changeFrontView() {
+        mView = lookAt([1, 0.5, 0], [0, 0.5, 0.0], [0,1,0]);
+        document.getElementById("x").innerHTML = 0;
+        document.getElementById("y").innerHTML = -45;
+        document.getElementById("xRotation").value = 0;
+        document.getElementById("yRotation").value = -45;
     }
 
     document.getElementById("topView").onclick = function changeTopView() {
-        mView = lookAt([0, 1.6, 0], [0, 0.6, 0.0], [0,0,-1]);
+        mView = lookAt([0, 1.5, 0], [0, 0.5, 0.0], [0,0,-1]);
+        document.getElementById("x").innerHTML = 90;
+        document.getElementById("y").innerHTML = 45;
+        document.getElementById("xRotation").value = 90;
+        document.getElementById("yRotation").value = 45;
     }
 
     document.getElementById("rightSideView").onclick = function changeRightSideView() {
-        mView = lookAt([0, 0.6, 1], [0, 0.6, 0.0], [0,1,0]);
+        mView = lookAt([0, 0.5, 1], [0, 0.5, 0.0], [0,1,0]);
+        document.getElementById("x").innerHTML = -19;
+        document.getElementById("y").innerHTML = 45;
+        document.getElementById("xRotation").value = -19;
+        document.getElementById("yRotation").value = 45;
     }
 
     document.getElementById("cameraRotation").oninput = function Rotate() {
         let angleX = document.getElementById("xRotation").value;
         let angleY = document.getElementById("yRotation").value;
+        document.getElementById("x").innerHTML = angleX;
+        document.getElementById("y").innerHTML = angleY;
         
-        mView = mult(lookAt([1, 0.6, 0], [0, 0.6, 0.0], [0,1,0]), mult(rotateY(angleY), rotateX(angleX)));
+        mView = mult(lookAt([1.0, 0.5, 1.0], [-5.0, -2.5, -5.0], [0,1,0]), mult(rotateY(angleY), rotateX(angleX)));
     }
 
     document.getElementById("cameraScale").oninput = function Rotate() {
         s = document.getElementById("scale").value;
+        document.getElementById("s").innerHTML = Number((s / SCALE * 100).toFixed(1));;
     }
 
     document.onkeydown = function(event) {
@@ -126,7 +151,7 @@ function setup(shaders)
         aspect = canvas.width / canvas.height;
 
         gl.viewport(0,0,canvas.width, canvas.height);
-        mProjection = ortho(-aspect, aspect, -1, 1, -3, 3);
+        mProjection = ortho(-aspect, aspect, -1, 1, -5, 5);
     }
 
     function uploadModelView()
@@ -648,7 +673,6 @@ function setup(shaders)
 
     function Building()
     {
-       
         pushMatrix();
             multTranslation([22.6,3.5,-22.6]);
             multScale([4.5, 7.0, 4.5]);
@@ -658,36 +682,67 @@ function setup(shaders)
     }
     function BuildingDestruction() {     
         pushMatrix();
-            multTranslation([20.6,8.0,-22.6]);
             multScale([0.5, 2.0, 4.5]);
             uploadModelView();
             CUBE.draw(gl, program, mode);
         popMatrix();
     }
-    function AllBuildingDestruction(){ 
-    pushMatrix();
-        BuildingDestruction();
-    popMatrix();
-    pushMatrix();
-        multTranslation([-126.7,7.5,-10.6]);
-        multScale([7.7, 1.2, .2]);
-        BuildingDestruction();
-    popMatrix();
-    pushMatrix();
-        multTranslation([-110.69,4.5,25.6]);
-        multScale([7.0, 1.44, 0.7]);
-        BuildingDestruction();
-    popMatrix();  
-    pushMatrix();
-        multTranslation([-109.3,4.5,20.2]);
-        multScale([7.0, 1.64, 0.7]);
-        BuildingDestruction();
-    popMatrix();  
-    
 
-    }
-    function AllBuildings() {
+    function AllBuildingDestruction()
+    {
     pushMatrix();
+        multTranslation([23.6,8.0,-4.3]);
+        multRotationY(-180);
+        multScale([2.0,1.0,1.0]);
+        BuildingDestruction();
+    popMatrix();
+    pushMatrix();
+        multTranslation([22.6,4.2,-3.6]);
+        multRotationX(45);
+        multScale([1.0,1.5,0.2]);
+        BuildingDestruction();
+    popMatrix();
+    pushMatrix();
+        multTranslation([22.6,4.2,-5.9]);
+        multRotationX(-30);
+        multScale([2.0,2.0,0.2]);
+        BuildingDestruction();
+    popMatrix();
+    pushMatrix();
+        multTranslation([22.35, 7.5,-1.34]);
+        multScale([7.1, 4.0, 0.7]);
+        BuildingDestruction();
+    popMatrix();
+    pushMatrix();
+        multTranslation([15.5,15.5,-1.31]);
+        multScale([0.3,0.15,0.3]);
+        Building();
+    popMatrix();
+    pushMatrix();
+        multTranslation([22.35,9.5,-8.1]);
+        multScale([7.1, 6.0, 0.7]);
+        BuildingDestruction();
+    popMatrix();  
+    pushMatrix();
+        multTranslation([4.3,0.0,45.0]);
+        multScale([0.8, 0.5, 2.2]);
+        Building();  
+    popMatrix();
+    }
+    
+    function Buildings()
+    {
+    pushMatrix();
+        pushMatrix();
+            multTranslation([20.6,8.0,-22.6]);
+            BuildingDestruction();
+        popMatrix();
+        pushMatrix();
+            multTranslation([22.6,8.0,-24.3]);
+            multRotationY(-90);
+            multScale([2.0,1.0,1.0]);
+            BuildingDestruction();
+        popMatrix();
         Building();
     popMatrix();   
     pushMatrix();
@@ -695,11 +750,18 @@ function setup(shaders)
         multScale([0.9, 1.2, 2.2]);
         Building();  
     popMatrix();
-    pushMatrix();
-        multTranslation([4.3,0.0,45.0]);
-        multScale([0.8, 0.5, 2.2]);
-        Building();  
-    popMatrix();
+    }
+
+    function AllBuildings()
+    {
+        pushMatrix();
+            Buildings();
+            multTranslation([-2.0,0.0,0.0]);
+            AllBuildingDestruction();
+        popMatrix();
+    }
+
+    function Tank() {
     }
 
     function World()
@@ -719,12 +781,13 @@ function setup(shaders)
             multTranslation([6.0,0.0,0.0]);
             WallStake();
             Wall();
-           
         popMatrix();
-        pushMatrix();
-            AllBuildings();
-            AllBuildingDestruction()
-        popMatrix();
+
+
+        Tank();
+        
+
+        AllBuildings();
 
         /*pushMatrix();
             multTranslation([0.0, 0.5, 0.0]);
