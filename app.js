@@ -266,7 +266,7 @@ function setup(shaders)
         uploadModelView();
         CUBE.draw(gl, program, mode);
     }
-
+   
     function Connections()
     {
         pushMatrix();
@@ -646,6 +646,62 @@ function setup(shaders)
         popMatrix();
     }
 
+    function Building()
+    {
+       
+        pushMatrix();
+            multTranslation([22.6,3.5,-22.6]);
+            multScale([4.5, 7.0, 4.5]);
+            uploadModelView();
+            CUBE.draw(gl, program, mode);
+        popMatrix();
+    }
+    function BuildingDestruction() {     
+        pushMatrix();
+            multTranslation([20.6,8.0,-22.6]);
+            multScale([0.5, 2.0, 4.5]);
+            uploadModelView();
+            CUBE.draw(gl, program, mode);
+        popMatrix();
+    }
+    function AllBuildingDestruction(){ 
+    pushMatrix();
+        BuildingDestruction();
+    popMatrix();
+    pushMatrix();
+        multTranslation([-126.7,7.5,-10.6]);
+        multScale([7.7, 1.2, .2]);
+        BuildingDestruction();
+    popMatrix();
+    pushMatrix();
+        multTranslation([-110.69,4.5,25.6]);
+        multScale([7.0, 1.44, 0.7]);
+        BuildingDestruction();
+    popMatrix();  
+    pushMatrix();
+        multTranslation([-109.3,4.5,20.2]);
+        multScale([7.0, 1.64, 0.7]);
+        BuildingDestruction();
+    popMatrix();  
+    
+
+    }
+    function AllBuildings() {
+    pushMatrix();
+        Building();
+    popMatrix();   
+    pushMatrix();
+        multTranslation([2.5,0.0,69.5]);
+        multScale([0.9, 1.2, 2.2]);
+        Building();  
+    popMatrix();
+    pushMatrix();
+        multTranslation([4.3,0.0,45.0]);
+        multScale([0.8, 0.5, 2.2]);
+        Building();  
+    popMatrix();
+    }
+
     function World()
     {
         gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(1, 0.0, 1.0)); //Helicopter color
@@ -663,6 +719,11 @@ function setup(shaders)
             multTranslation([6.0,0.0,0.0]);
             WallStake();
             Wall();
+           
+        popMatrix();
+        pushMatrix();
+            AllBuildings();
+            AllBuildingDestruction()
         popMatrix();
 
         /*pushMatrix();
