@@ -5,20 +5,24 @@ import {modelView, loadMatrix, multRotationY, multScale, multTranslation, popMat
 import * as SPHERE from './libs/objects/sphere.js';
 import * as CUBE from './libs/objects/cube.js';
 import * as CYLINDER from './libs/objects/cylinder.js';
+import * as PYRAMID from './libs/objects/pyramid.js';
+import * as BUNNY from './libs/objects/bunny.js';
+import * as TORUS from './libs/objects/torus.js';
 
 const VELOCITY_FACTOR = 0.5;
 const MAXIMUM_VELOCITY_LEVEL = 8;
-const CEILING = 10;
+const CEILING = 15;
 const FLOOR = 0;
 const SPEED = 0.005; // Speed (how many time units added to time on each render pass
 const SECOND = 60 * SPEED; //Speed increments one time per second.
+const SCALE = 0.16; //World Scale
 let unitsAwayFromCenter = 4.0; // radius of helicopter s circular movement | CONSTANT VS VARIABLE
 
 /** @type WebGLRenderingContext */
 let gl;
 let time = 0;           // Global simulation time
 let mode;               // Drawing mode (gl.LINES or gl.TRIANGLES)
-let s = 0.3;            //World Scale
+let s = SCALE;            
 let motorVelocity = 0;
 let height = 0;
 let isMovingLeft = false;
@@ -39,38 +43,62 @@ function setup(shaders)
 
     let program = buildProgramFromSources(gl, shaders["shader.vert"], shaders["shader.frag"]);
 
-    let mProjection = ortho(-aspect, aspect, -1, 1,-3,3);
+    let mProjection = ortho(-aspect, aspect, -1, 1,-5,5);
 
     mode = gl.TRIANGLES; 
 
     resize_canvas();
     window.addEventListener("resize", resize_canvas);
 
+    document.getElementById("x").innerHTML = 0;
+    document.getElementById("y").innerHTML = 0;
+    document.getElementById("scale").innerHTML = SCALE;
+    document.getElementById("s").innerHTML = s / SCALE * 100;
+
     document.getElementById("normalView").onclick = function changeNormalView() {
-        mView = lookAt([1,1,1], [0,0,0], [0,1,0]);
+        mView = lookAt([1,1,1], [0,0.1,0], [0,1,0]);
+        document.getElementById("x").innerHTML = 0;
+        document.getElementById("y").innerHTML = 0;
+        document.getElementById("xRotation").value = 0;
+        document.getElementById("yRotation").value = 0;
     }
 
-    document.getElementById("fronView").onclick = function changeFrontView() {
-        mView = lookAt([1, 0.6, 0], [0, 0.6, 0.0], [0,1,0]);
+    document.getElementById("frontView").onclick = function changeFrontView() {
+        mView = lookAt([1, 0.5, 0], [0, 0.5, 0.0], [0,1,0]);
+        document.getElementById("x").innerHTML = 0;
+        document.getElementById("y").innerHTML = -45;
+        document.getElementById("xRotation").value = 0;
+        document.getElementById("yRotation").value = -45;
     }
 
     document.getElementById("topView").onclick = function changeTopView() {
-        mView = lookAt([0, 1.6, 0], [0, 0.6, 0.0], [0,0,-1]);
+        mView = lookAt([0, 1.5, 0], [0, 0.5, 0.0], [0,0,-1]);
+        document.getElementById("x").innerHTML = 90;
+        document.getElementById("y").innerHTML = 45;
+        document.getElementById("xRotation").value = 90;
+        document.getElementById("yRotation").value = 45;
     }
 
     document.getElementById("rightSideView").onclick = function changeRightSideView() {
-        mView = lookAt([0, 0.6, 1], [0, 0.6, 0.0], [0,1,0]);
+        mView = lookAt([0, 0.5, 1], [0, 0.5, 0.0], [0,1,0]);
+        document.getElementById("x").innerHTML = -19;
+        document.getElementById("y").innerHTML = 45;
+        document.getElementById("xRotation").value = -19;
+        document.getElementById("yRotation").value = 45;
     }
 
     document.getElementById("cameraRotation").oninput = function Rotate() {
         let angleX = document.getElementById("xRotation").value;
         let angleY = document.getElementById("yRotation").value;
+        document.getElementById("x").innerHTML = angleX;
+        document.getElementById("y").innerHTML = angleY;
         
-        mView = mult(lookAt([1, 0.6, 0], [0, 0.6, 0.0], [0,1,0]), mult(rotateY(angleY), rotateX(angleX)));
+        mView = mult(lookAt([1.0, 0.5, 1.0], [-5.0, -2.5, -5.0], [0,1,0]), mult(rotateY(angleY), rotateX(angleX)));
     }
 
     document.getElementById("cameraScale").oninput = function Rotate() {
         s = document.getElementById("scale").value;
+        document.getElementById("s").innerHTML = Number((s / SCALE * 100).toFixed(1));;
     }
 
     document.onkeydown = function(event) {
@@ -97,7 +125,6 @@ function setup(shaders)
 
         }
     };
-    let k = 0;
     document.onkeyup = function(event) {
         switch(event.key) {
             case "ArrowLeft":
@@ -113,6 +140,9 @@ function setup(shaders)
     SPHERE.init(gl);
     CUBE.init(gl);
     CYLINDER.init(gl);
+    PYRAMID.init(gl);
+    BUNNY.init(gl);
+    TORUS.init(gl);
     gl.enable(gl.DEPTH_TEST);   // Enables Z-buffer depth test
     
     window.requestAnimationFrame(render);
@@ -126,7 +156,7 @@ function setup(shaders)
         aspect = canvas.width / canvas.height;
 
         gl.viewport(0,0,canvas.width, canvas.height);
-        mProjection = ortho(-aspect, aspect, -1, 1, -3, 3);
+        mProjection = ortho(-aspect, aspect, -1, 1, -5, 5);
     }
 
     function uploadModelView()
@@ -429,6 +459,7 @@ function setup(shaders)
 
     function Helicopter()
     {
+        multScale([2.5,2.5,2.5]);
         pushMatrix();
             HelicopterMovement();
             HelicopterParts();
@@ -648,7 +679,6 @@ function setup(shaders)
 
     function Building()
     {
-       
         pushMatrix();
             multTranslation([22.6,3.5,-22.6]);
             multScale([4.5, 7.0, 4.5]);
@@ -658,36 +688,67 @@ function setup(shaders)
     }
     function BuildingDestruction() {     
         pushMatrix();
-            multTranslation([20.6,8.0,-22.6]);
             multScale([0.5, 2.0, 4.5]);
             uploadModelView();
             CUBE.draw(gl, program, mode);
         popMatrix();
     }
-    function AllBuildingDestruction(){ 
-    pushMatrix();
-        BuildingDestruction();
-    popMatrix();
-    pushMatrix();
-        multTranslation([-126.7,7.5,-10.6]);
-        multScale([7.7, 1.2, .2]);
-        BuildingDestruction();
-    popMatrix();
-    pushMatrix();
-        multTranslation([-110.69,4.5,25.6]);
-        multScale([7.0, 1.44, 0.7]);
-        BuildingDestruction();
-    popMatrix();  
-    pushMatrix();
-        multTranslation([-109.3,4.5,20.2]);
-        multScale([7.0, 1.64, 0.7]);
-        BuildingDestruction();
-    popMatrix();  
-    
 
-    }
-    function AllBuildings() {
+    function AllBuildingDestruction()
+    {
     pushMatrix();
+        multTranslation([23.6,8.0,-4.3]);
+        multRotationY(-180);
+        multScale([2.0,1.0,1.0]);
+        BuildingDestruction();
+    popMatrix();
+    pushMatrix();
+        multTranslation([22.6,4.2,-3.6]);
+        multRotationX(45);
+        multScale([1.0,1.5,0.2]);
+        BuildingDestruction();
+    popMatrix();
+    pushMatrix();
+        multTranslation([22.6,4.2,-5.9]);
+        multRotationX(-30);
+        multScale([2.0,2.0,0.2]);
+        BuildingDestruction();
+    popMatrix();
+    pushMatrix();
+        multTranslation([22.35, 7.5,-1.34]);
+        multScale([7.1, 4.0, 0.7]);
+        BuildingDestruction();
+    popMatrix();
+    pushMatrix();
+        multTranslation([15.5,15.5,-1.31]);
+        multScale([0.3,0.15,0.3]);
+        Building();
+    popMatrix();
+    pushMatrix();
+        multTranslation([22.35,9.5,-8.1]);
+        multScale([7.1, 6.0, 0.7]);
+        BuildingDestruction();
+    popMatrix();  
+    pushMatrix();
+        multTranslation([4.3,0.0,45.0]);
+        multScale([0.8, 0.5, 2.2]);
+        Building();  
+    popMatrix();
+    }
+    
+    function Buildings()
+    {
+    pushMatrix();
+        pushMatrix();
+            multTranslation([20.6,8.0,-22.6]);
+            BuildingDestruction();
+        popMatrix();
+        pushMatrix();
+            multTranslation([22.6,8.0,-24.3]);
+            multRotationY(-90);
+            multScale([2.0,1.0,1.0]);
+            BuildingDestruction();
+        popMatrix();
         Building();
     popMatrix();   
     pushMatrix();
@@ -695,11 +756,228 @@ function setup(shaders)
         multScale([0.9, 1.2, 2.2]);
         Building();  
     popMatrix();
-    pushMatrix();
-        multTranslation([4.3,0.0,45.0]);
-        multScale([0.8, 0.5, 2.2]);
-        Building();  
-    popMatrix();
+    }
+
+    function AllBuildings()
+    {
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(.1, .1, .1));
+        
+        pushMatrix();
+            Buildings();
+            multTranslation([-2.0,0.0,0.0]);
+            AllBuildingDestruction();
+        popMatrix();
+    }
+
+    function WheelDetail()
+    {
+        pushMatrix();
+            multTranslation([0.0,0.0,0.02]);
+            multScale([0.5,0.5,1.0]);
+            SmallWheels();
+        popMatrix();
+    }
+
+    function SmallWheels()
+    {
+        pushMatrix();
+            multTranslation([0.0,0.0,0.07]);
+            multScale([0.15,0.15,0.1]);
+            uploadModelView();
+            SPHERE.draw(gl, program, mode);
+        popMatrix();
+        
+    }
+
+    function TankWheels()
+    {
+        pushMatrix();
+            multScale([1.5,0.3,0.1]);
+            uploadModelView();
+            SPHERE.draw(gl, program, mode);
+        popMatrix();
+        pushMatrix();
+            multTranslation([0.0,0.0,0.03])
+            multScale([1.5,0.2,0.1]);
+            uploadModelView();
+            SPHERE.draw(gl, program, mode);
+        popMatrix();
+        pushMatrix();
+            multScale([1.25,1.25,1.25]);
+            SmallWheels();
+            WheelDetail();
+        popMatrix();
+        pushMatrix();
+            multTranslation([0.25,0.0,0.0]);
+            SmallWheels();
+            WheelDetail();
+        popMatrix();
+        pushMatrix();
+            multTranslation([-0.25,0.0,0.0]);
+            SmallWheels();
+            WheelDetail();
+        popMatrix();
+        pushMatrix();
+            multTranslation([-0.425,0.0,0.01]);
+            multScale([0.75,0.75,0.75]);
+            SmallWheels();
+            WheelDetail();
+        popMatrix();
+        pushMatrix();
+            multTranslation([0.425,0.0,0.01]);
+            multScale([0.75,0.75,0.75]);
+            SmallWheels();
+            WheelDetail();
+        popMatrix();
+
+    }
+
+    function TankCannon()
+    {
+        pushMatrix();
+            multTranslation([1.0,0.1,0.0]);
+            multRotationZ(-88);
+            multScale([0.1,3.0,0.1]);
+            uploadModelView();
+            CYLINDER.draw(gl, program, mode);
+            pushMatrix();
+                multTranslation([0.0,0.5,0.0]);
+                multScale([1.5,0.1,1.5]);
+                uploadModelView();
+                CYLINDER.draw(gl, program, mode); 
+            popMatrix();
+            pushMatrix();
+                multTranslation([0.0,-0.15,0.0]);
+                multScale([3.0,0.1,3.0]);
+                uploadModelView();
+                CYLINDER.draw(gl, program, mode); 
+            popMatrix();
+            pushMatrix();
+                multTranslation([0.0,-0.05,0.0]);
+                multScale([2.0,0.1,2.0]);
+                uploadModelView();
+                CYLINDER.draw(gl, program, mode); 
+            popMatrix();
+            pushMatrix();
+                multTranslation([0.0,0.0,0.0]);
+                multScale([1.5,0.1,1.5]);
+                uploadModelView();
+                CYLINDER.draw(gl, program, mode); 
+            popMatrix();
+        popMatrix();
+    }
+
+    function TankBody()
+    {
+        pushMatrix();
+            multTranslation([0.0,0.09,0.0]);
+            multScale([1.5,0.15,1.5]);
+            uploadModelView();
+            CUBE.draw(gl, program, mode);
+        popMatrix();
+        //Init TankHead
+        pushMatrix();
+            pushMatrix();
+            multScale([1.0,1.0,0.50]);
+                multTranslation([0.0,0.3,0.0]);
+                multScale([0.4,0.2,0.8]);
+                uploadModelView();
+                CUBE.draw(gl, program, mode);
+                multTranslation([0.0,0.1,0.0]);
+                TankCannon();
+                multTranslation([-0.75,0.5,0.2]);
+                pushMatrix();
+                    multTranslation([0.75,0.2,0.0]);
+                    multRotationX(90);
+                    multScale([0.3,0.3,0.3]);
+                    uploadModelView();
+                    SPHERE.draw(gl, program, mode);
+                    multTranslation([0.0,-1.3,0.0]);
+                    uploadModelView();
+                    SPHERE.draw(gl, program, mode);
+                    popMatrix();
+                pushMatrix();
+                    multTranslation([0.0,0.1,0.0]);
+                    multRotationZ(65);
+                    multScale([0.02,0.75,0.04]);
+                    uploadModelView();
+                    CYLINDER.draw(gl, program, mode);
+                popMatrix();
+                pushMatrix();
+                    multTranslation([0.33,-0.12,0.0]);
+                    multScale([0.1,0.3,0.1]);
+                    uploadModelView();
+                    SPHERE.draw(gl, program, mode);
+                popMatrix();
+            popMatrix();
+            multTranslation([0.0,0.4,0.0]);
+            multScale([0.2,0.2,0.4]);
+            multRotationY(120 * time);
+            uploadModelView();
+            SPHERE.draw(gl, program, mode);
+            multTranslation([0.0,0.2,0.0]);
+            multScale([0.5,0.5,0.5]);
+            TankCannon();
+        popMatrix();
+        //End TankHead
+        pushMatrix();
+            multTranslation([0.0,0.24,0.0]);
+            multScale([1.5,0.15,1.5]);
+            uploadModelView();
+            PYRAMID.draw(gl, program, mode);
+        popMatrix();
+    }
+
+    function Tank() {
+        multScale([2.0,2.0,2.0]);
+        pushMatrix();
+            multTranslation([0.0,0.0,0.4]);
+            TankWheels();
+        popMatrix();
+        pushMatrix();
+            multTranslation([0.0,0.0,-0.4]);
+            multRotationY(180);
+            TankWheels();
+        popMatrix();
+        pushMatrix();
+            multTranslation([0.0,-0.05,0.0]);
+            multScale([0.98,1.0,0.5]);
+            TankBody();
+        popMatrix();
+    }
+
+    function Tanks() 
+    {
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(.4, .4, .4));
+
+        pushMatrix();
+            multTranslation([0.0,0.15,0.0]);
+            Tank();
+        popMatrix();
+
+        pushMatrix();
+            multTranslation([-5.0,0.15,10.0]);
+            multRotationY(10);
+            Tank();
+        popMatrix();
+
+        pushMatrix();
+            multTranslation([-5.0,0.15,-10.0]);
+            multRotationY(-10);
+            Tank();
+        popMatrix();
+
+        pushMatrix();
+            multTranslation([-10.0,0.15,20.0]);
+            multRotationY(20);
+            Tank();
+        popMatrix();
+
+        pushMatrix();
+            multTranslation([-10.0,0.15,-20.0]);
+            multRotationY(-20);
+            Tank();
+        popMatrix();
     }
 
     function World()
@@ -719,13 +997,12 @@ function setup(shaders)
             multTranslation([6.0,0.0,0.0]);
             WallStake();
             Wall();
-           
-        popMatrix();
-        pushMatrix();
-            AllBuildings();
-            AllBuildingDestruction()
         popMatrix();
 
+        AllBuildings();
+
+        Tanks();
+        
         /*pushMatrix();
             multTranslation([0.0, 0.5, 0.0]);
             uploadModelView();

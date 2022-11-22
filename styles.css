@@ -31,13 +31,14 @@ body {
 #cameraControl {
     position: absolute;
     top: 8px;
+    left: 8px;
 }
 
 #cameraRotation {
     position: absolute;
     display: flex;
     top: 8px;
-    left: 25%;
+    left: 24.5%;
     
 }
 

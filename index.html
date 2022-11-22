@@ -8,16 +8,16 @@
     <body>
         <div id = "cameraControl">
             <button id = "normalView" type="button">Normal View</button> 
-            <button id = "fronView" type="button">Front View</button> 
+            <button id = "frontView" type="button">Front View</button> 
             <button id = "topView" type="button">Top View</button> 
             <button id = "rightSideView" type="button">Right Side View</button>
         </div>
         <div id = "cameraRotation">
-            <input id = "xRotation" type="range" min="-180" max="180" step = "1">X</input>
-            <input id = "yRotation" type="range" min="0" max="360" step = "1">Y</input>
+            <input id = "xRotation" type="range" min="-180" max="180" step = "1" value="0"><span id="x"></span></input>
+            <input id = "yRotation" type="range" min="-180" max="180" step = "1" value = "0"><span id="y"></span></input>
         </div>
         <div id = "cameraScale">
-            <input id = "scale" type="range" min="0.03" max="0.6" step = "0.01">Scale</input>
+            <input id = "scale" type="range" min= "0.02" max= "0.721" step = "0.01" value = "0.16"><span id="s"></span>%</input>
         </div>
         
         <div id = "box"></div>
