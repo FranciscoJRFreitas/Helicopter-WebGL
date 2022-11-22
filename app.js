@@ -694,7 +694,7 @@ function setup(shaders)
         popMatrix();
     }
 
-    function AllBuildingDestruction()
+    function BuildingDestructed()
     {
     pushMatrix();
         multTranslation([23.6,8.0,-4.3]);
@@ -709,14 +709,28 @@ function setup(shaders)
         BuildingDestruction();
     popMatrix();
     pushMatrix();
+        multTranslation([23.0,2.0,-18.6]);
+        pushMatrix();
+            multTranslation([-0.75,-2.2,3.1]);
+            multRotationY(-75);
+            multRotationX(-25);
+            multRotationZ(45);
+            Window();
+        popMatrix();
+        multRotationX(45);
+        multRotationZ(-35);
+        multScale([1.0,1.0,0.8]);
+        BuildingDestruction();
+    popMatrix();
+    pushMatrix();
         multTranslation([22.6,4.2,-5.9]);
         multRotationX(-30);
         multScale([2.0,2.0,0.2]);
         BuildingDestruction();
     popMatrix();
     pushMatrix();
-        multTranslation([22.35, 7.5,-1.34]);
-        multScale([7.1, 4.0, 0.7]);
+        multTranslation([22.4, 7.5,-1.34]);
+        multScale([7.25, 4.0, 0.7]);
         BuildingDestruction();
     popMatrix();
     pushMatrix();
@@ -725,8 +739,8 @@ function setup(shaders)
         Building();
     popMatrix();
     pushMatrix();
-        multTranslation([22.35,9.5,-8.1]);
-        multScale([7.1, 6.0, 0.7]);
+        multTranslation([22.4,9.5,-8.1]);
+        multScale([7.25, 6.0, 0.7]);
         BuildingDestruction();
     popMatrix();  
     pushMatrix();
@@ -740,17 +754,18 @@ function setup(shaders)
     {
     pushMatrix();
         pushMatrix();
-            multTranslation([20.6,8.0,-22.6]);
+            multTranslation([22.1,8.0,-24.6]);
+            multRotationY(90);
+            multScale([1.0,1.0,0.8]);
             BuildingDestruction();
         popMatrix();
         pushMatrix();
-            multTranslation([22.6,8.0,-24.3]);
-            multRotationY(-90);
+            multTranslation([24.35,8.0,-22.6]);
             multScale([2.0,1.0,1.0]);
             BuildingDestruction();
         popMatrix();
         Building();
-    popMatrix();   
+    popMatrix(); 
     pushMatrix();
         multTranslation([2.5,0.0,69.5]);
         multScale([0.9, 1.2, 2.2]);
@@ -765,8 +780,12 @@ function setup(shaders)
         pushMatrix();
             Buildings();
             multTranslation([-2.0,0.0,0.0]);
-            AllBuildingDestruction();
+            BuildingDestructed();
         popMatrix();
+
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(.4, .4, .4));
+
+        AllWindows();
     }
 
     function WheelDetail()
@@ -980,6 +999,137 @@ function setup(shaders)
         popMatrix();
     }
 
+    function Window() 
+    {
+        pushMatrix();
+            multTranslation([0.0,3.5,0.0]);
+            multScale([1.5, 1.5, .04]);
+            uploadModelView();
+            CUBE.draw(gl, program, mode);
+        popMatrix();
+        pushMatrix();
+            multTranslation([0.0,4.25,0.1]);
+            multScale([1.5, 0.2, 0.25]);
+            uploadModelView();
+            CUBE.draw(gl, program, mode);
+        popMatrix();
+        pushMatrix();
+            multTranslation([0.0,2.75,0.1]);
+            multScale([1.5, 0.2, 0.25]);
+            uploadModelView();
+            CUBE.draw(gl, program, mode);
+        popMatrix();
+        pushMatrix();
+            multTranslation([0.8,3.5,0.1]);
+            multRotationZ(-90);
+            multScale([1.7, 0.2, 0.25]);
+            uploadModelView();
+            CUBE.draw(gl, program, mode);
+        popMatrix();  
+        pushMatrix();
+            multTranslation([-0.8,3.5,0.1]);
+            multRotationZ(-90);
+            multScale([1.7, 0.2, 0.25]);
+            uploadModelView();
+            CUBE.draw(gl, program, mode);
+        popMatrix();                      
+    }
+
+    function AllWindows() {
+        pushMatrix();
+            multTranslation([20.5,4.5,0.22]);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([20.5,0.5,0.22]);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([18.55,4.5,-1.32]);
+            multRotationY(-90);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([18.55,0.5,-1.32]);
+            multRotationY(-90);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([18.55,0.5,-8.1]);
+            multRotationY(-90);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([18.55,-1.9,-3.5]);
+            multRotationX(-15);
+            multRotationY(-65);
+            multRotationZ(15);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([18.55,8.5,-8.1]);
+            multRotationY(-90);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([18.55,4.5,-8.1]);
+            multRotationY(-90);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([20.5,8.5,-6.5]);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([22.5,1.8,-20.35]);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([22.5,-1.5,-20.35]);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([20.3,-1.5,-22.7]);
+            multRotationY(-90);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([20.3,1.8,-22.7]);
+            multRotationY(-90);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([23.0,3.0,24.75]);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([23.0,-0.8,24.75]);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([20.8,3.0,22.0]);
+            multRotationY(-90);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([20.8,3.0,18.0]);
+             multRotationY(-90);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([20.8,-0.8,22.0]);
+            multRotationY(-90);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([20.8,-0.8,18.0]);
+            multRotationY(-90);
+            Window();
+        popMatrix();
+
+
+    }
+
     function World()
     {
         gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(1, 0.0, 1.0)); //Helicopter color
@@ -1002,7 +1152,7 @@ function setup(shaders)
         AllBuildings();
 
         Tanks();
-        
+
         /*pushMatrix();
             multTranslation([0.0, 0.5, 0.0]);
             uploadModelView();
