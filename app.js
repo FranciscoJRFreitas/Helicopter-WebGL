@@ -886,6 +886,11 @@ function setup(shaders)
         popMatrix();
     }
 
+    function TankHatch()
+    {
+
+    }
+
     function TankBody()
     {
         pushMatrix();
@@ -897,7 +902,7 @@ function setup(shaders)
         //Init TankHead
         pushMatrix();
             pushMatrix();
-            multScale([1.0,1.0,0.50]);
+                multScale([1.0,1.0,0.50]);
                 multTranslation([0.0,0.3,0.0]);
                 multScale([0.4,0.2,0.8]);
                 uploadModelView();
@@ -905,16 +910,6 @@ function setup(shaders)
                 multTranslation([0.0,0.1,0.0]);
                 TankCannon();
                 multTranslation([-0.75,0.5,0.2]);
-                pushMatrix();
-                    multTranslation([0.75,0.2,0.0]);
-                    multRotationX(90);
-                    multScale([0.3,0.3,0.3]);
-                    uploadModelView();
-                    SPHERE.draw(gl, program, mode);
-                    multTranslation([0.0,-1.3,0.0]);
-                    uploadModelView();
-                    SPHERE.draw(gl, program, mode);
-                    popMatrix();
                 pushMatrix();
                     multTranslation([0.0,0.1,0.0]);
                     multRotationZ(65);
@@ -928,15 +923,25 @@ function setup(shaders)
                     uploadModelView();
                     SPHERE.draw(gl, program, mode);
                 popMatrix();
+                pushMatrix();
+                    multTranslation([0.75,0.2,0.0]);
+                    multRotationX(90);
+                    multScale([0.3,0.3,0.3]);
+                    uploadModelView();
+                    SPHERE.draw(gl, program, mode);
+                    multTranslation([0.0,-1.3,0.0]);
+                    uploadModelView();
+                    SPHERE.draw(gl, program, mode);
+                popMatrix();
             popMatrix();
-            multTranslation([0.0,0.4,0.0]);
-            multScale([0.2,0.2,0.4]);
-            multRotationY(120 * time);
-            uploadModelView();
-            SPHERE.draw(gl, program, mode);
-            multTranslation([0.0,0.2,0.0]);
-            multScale([0.5,0.5,0.5]);
-            TankCannon();
+                multTranslation([0.0,0.4,0.0]);
+                multScale([0.2,0.2,0.4]);
+                multRotationY(120 * time);
+                uploadModelView();
+                SPHERE.draw(gl, program, mode);
+                multTranslation([0.0,0.2,0.0]);
+                multScale([0.5,0.5,0.5]);
+                TankCannon();
         popMatrix();
         //End TankHead
         pushMatrix();
@@ -948,6 +953,7 @@ function setup(shaders)
     }
 
     function Tank() {
+        multTranslation([0.0,0.1,0.0]);
         multScale([2.0,2.0,2.0]);
         pushMatrix();
             multTranslation([0.0,0.0,0.4]);
