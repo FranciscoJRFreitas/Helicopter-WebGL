@@ -760,6 +760,8 @@ function setup(shaders)
 
     function AllBuildings()
     {
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(.1, .1, .1));
+        
         pushMatrix();
             Buildings();
             multTranslation([-2.0,0.0,0.0]);
@@ -947,7 +949,7 @@ function setup(shaders)
     function Tanks() 
     {
         gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(.4, .4, .4));
-        
+
         pushMatrix();
             multTranslation([0.0,0.15,0.0]);
             Tank();
