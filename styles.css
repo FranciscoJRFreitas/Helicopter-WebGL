@@ -7,43 +7,8 @@ body {
     overflow: hidden; /*  Disable scrollbars */
     background-color: black;
 }
-
-#info {
-    position: absolute;
-    top: 8px;
-    right: 30px;
-    font-size: 18px;
-    color: black;
-    line-height: 1.0;
-}
-
-#box {
-    position: absolute;
-    background-color: rgb(6, 148, 180);
-    width: 100px;
-    height: 40px;
-    border: 5px solid #D9514EFF;
-    top: 26px;
-    right: 15px;
-    padding: 10px;
-}
-
 #cameraControl {
     position: absolute;
     top: 8px;
     left: 8px;
-}
-
-#cameraRotation {
-    position: absolute;
-    display: flex;
-    top: 8px;
-    left: 24.5%;
-    
-}
-
-#cameraScale {
-    position: absolute;
-    top: 8px;
-    left: 45%;
 }

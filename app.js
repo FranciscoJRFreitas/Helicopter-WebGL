@@ -8,31 +8,57 @@ import * as CYLINDER from './libs/objects/cylinder.js';
 import * as PYRAMID from './libs/objects/pyramid.js';
 import * as BUNNY from './libs/objects/bunny.js';
 import * as TORUS from './libs/objects/torus.js';
+import { GUI } from './libs/dat.gui.module.js';
 
 const VELOCITY_FACTOR = 0.5;
+const BOX_MASS = 0.5;
 const MAXIMUM_VELOCITY_LEVEL = 8;
 const CEILING = 15;
 const FLOOR = 0;
 const SPEED = 0.005; // Speed (how many time units added to time on each render pass
 const SECOND = 60 * SPEED; //Speed increments one time per second.
-const SCALE = 0.16; //World Scale
-let unitsAwayFromCenter = 4.0; // radius of helicopter s circular movement | CONSTANT VS VARIABLE
+const CONSTSCALE = 0.03; //World Scale
+const UNITSAWAYFROMCENTER = 4.0; // radius of helicopter s circular movement | CONSTANT VS VARIABLE
 
 /** @type WebGLRenderingContext */
+//Not supposed to change
 let gl;
 let time = 0;           // Global simulation time
-let mode;               // Drawing mode (gl.LINES or gl.TRIANGLES)
-let s = SCALE;            
 let motorVelocity = 0;
 let height = 0;
 let isMovingLeft = false;
 let boxes = [];
-
-let leaningAngle = 0; //Not supposed to change
+let leaningAngle = 0;
 let heliTime = 0;
 let bladeTime = 0;
-let mView = lookAt([1,1,1], [0,0,0], [0,1,0]);
+let mView = lookAt([1.0, 0.5, 1.0], [-5.0, -2.5, -5.0], [0,1,0]);
 
+const camera = new function(){
+    this.Zoom = CONSTSCALE;
+    this.Gama = 0;
+    this.Theta = 0;
+}
+
+const worldOptions = new function(){
+    this.Speed = SPEED;
+    this.Mode = NaN;
+    this.Ceiling = CEILING;
+}
+
+const heliOptions = new function(){
+    this.Speed = VELOCITY_FACTOR;
+    this.Scale = 1.0;
+    this.Height = 0.01;
+    this.MotorVelocity = motorVelocity;
+    this.Radius = UNITSAWAYFROMCENTER;
+    this.LeaningAngle = leaningAngle;
+}
+
+const boxOptions = new function(){
+    this.Number = boxes.length;
+    this.Mass = BOX_MASS;
+    this.Scale = 1.0;
+}
 
 function setup(shaders)
 {
@@ -45,60 +71,68 @@ function setup(shaders)
 
     let mProjection = ortho(-aspect, aspect, -1, 1,-5,5);
 
-    mode = gl.TRIANGLES; 
+    const gui = new GUI();
+
+    const camOptFolder = gui.addFolder('Camera Options');
+    camOptFolder.add(camera, "Zoom", CONSTSCALE/3, CONSTSCALE * 10);
+    var gamaCam = camOptFolder.add(camera, "Gama", -180, 180);
+    var thetaCam = camOptFolder.add(camera, "Theta", -180, 180);
+    camOptFolder.open();
+
+    const worldOptFolder = gui.addFolder('World Options');
+    var mode = worldOptFolder.add(worldOptions, "Mode", {Lines: "gl.LINES", Solid: "gl.TRIANGLES"}).setValue("gl.TRIANGLES");
+    worldOptions.Mode = gl.TRIANGLES;
+    worldOptFolder.add(worldOptions, "Speed", SPEED/3, SPEED * 10);
+    worldOptFolder.add(worldOptions, "Ceiling", 5, 20);
+    worldOptFolder.open();
+
+    const heliOptFolder = gui.addFolder('Helicopter Options');
+    heliOptFolder.add(heliOptions, "Speed", VELOCITY_FACTOR/2, VELOCITY_FACTOR * 5);
+    heliOptFolder.add(heliOptions, "Scale", 0.2, 3);
+    var heliHeight = heliOptFolder.add(heliOptions, "Height", height);
+    var heliMVel = heliOptFolder.add(heliOptions, "MotorVelocity", motorVelocity).name("Motor Velocity");
+    heliOptFolder.add(heliOptions, "Radius", 3, 9).name("Trajectory Radius");
+    var heliLeanAng = heliOptFolder.add(heliOptions, "LeaningAngle", leaningAngle).name("Leaning Angle");
+    heliOptFolder.open();
+
+    const boxOptFolder = gui.addFolder('Box Options');
+    var nBoxes = boxOptFolder.add(boxOptions, "Number", boxes.length);
+    boxOptFolder.add(boxOptions, "Mass", 0.25, 2.0);
+    boxOptFolder.add(boxOptions, "Scale", 1.0, 3.0);
+    boxOptFolder.open();
 
     resize_canvas();
     window.addEventListener("resize", resize_canvas);
 
-    document.getElementById("x").innerHTML = 0;
-    document.getElementById("y").innerHTML = 0;
-    document.getElementById("scale").innerHTML = SCALE;
-    document.getElementById("s").innerHTML = s / SCALE * 100;
+    gamaCam.onChange( function(){
+        mView = mult(lookAt([1.0, 0.5, 1.0], [-5.0, -2.5, -5.0], [0,1,0]), mult(rotateY(camera.Gama), rotateX(camera.Theta)));
+    });
+
+    thetaCam.onChange( function(){
+        mView = mult(lookAt([1.0, 0.5, 1.0], [-5.0, -2.5, -5.0], [0,1,0]), mult(rotateY(camera.Gama), rotateX(camera.Theta)));
+    });
+
+    mode.onChange( function(){
+        if(worldOptFolder.__controllers[0].object.Mode == 'gl.LINES')
+            worldOptions.Mode = gl.LINES;
+        else
+            worldOptions.Mode = gl.TRIANGLES;
+    });
 
     document.getElementById("normalView").onclick = function changeNormalView() {
         mView = lookAt([1,1,1], [0,0.1,0], [0,1,0]);
-        document.getElementById("x").innerHTML = 0;
-        document.getElementById("y").innerHTML = 0;
-        document.getElementById("xRotation").value = 0;
-        document.getElementById("yRotation").value = 0;
     }
 
     document.getElementById("frontView").onclick = function changeFrontView() {
         mView = lookAt([1, 0.5, 0], [0, 0.5, 0.0], [0,1,0]);
-        document.getElementById("x").innerHTML = 0;
-        document.getElementById("y").innerHTML = -45;
-        document.getElementById("xRotation").value = 0;
-        document.getElementById("yRotation").value = -45;
     }
 
     document.getElementById("topView").onclick = function changeTopView() {
         mView = lookAt([0, 1.5, 0], [0, 0.5, 0.0], [0,0,-1]);
-        document.getElementById("x").innerHTML = 90;
-        document.getElementById("y").innerHTML = 45;
-        document.getElementById("xRotation").value = 90;
-        document.getElementById("yRotation").value = 45;
     }
 
     document.getElementById("rightSideView").onclick = function changeRightSideView() {
         mView = lookAt([0, 0.5, 1], [0, 0.5, 0.0], [0,1,0]);
-        document.getElementById("x").innerHTML = -19;
-        document.getElementById("y").innerHTML = 45;
-        document.getElementById("xRotation").value = -19;
-        document.getElementById("yRotation").value = 45;
-    }
-
-    document.getElementById("cameraRotation").oninput = function Rotate() {
-        let angleX = document.getElementById("xRotation").value;
-        let angleY = document.getElementById("yRotation").value;
-        document.getElementById("x").innerHTML = angleX;
-        document.getElementById("y").innerHTML = angleY;
-        
-        mView = mult(lookAt([1.0, 0.5, 1.0], [-5.0, -2.5, -5.0], [0,1,0]), mult(rotateY(angleY), rotateX(angleX)));
-    }
-
-    document.getElementById("cameraScale").oninput = function Rotate() {
-        s = document.getElementById("scale").value;
-        document.getElementById("s").innerHTML = Number((s / SCALE * 100).toFixed(1));;
     }
 
     document.onkeydown = function(event) {
@@ -106,23 +140,18 @@ function setup(shaders)
             case "ArrowUp":
                 if(motorVelocity < MAXIMUM_VELOCITY_LEVEL) {
                     motorVelocity++;
+                    heliMVel.setValue(motorVelocity);
                 }
             break;
             case "ArrowDown":
                 if(motorVelocity > 0) {
                     motorVelocity--;
+                    heliMVel.setValue(motorVelocity);
                 }
             break;
             case "ArrowLeft":
                 isMovingLeft = true;
                break;
-            case "s":
-                mode = gl.TRIANGLES;
-            break;
-            case "w":
-                mode = gl.LINES;
-            break;
-
         }
     };
     document.onkeyup = function(event) {
@@ -132,6 +161,7 @@ function setup(shaders)
             break;
             case " ":
                 boxes.push({height: height, heliTime: heliTime, boxTime: 0, reachedGround: 1, reachGroundTime: 0, motorVelocity: motorVelocity}); //reachedGround: variable to make boxes stop at y = 0.
+                nBoxes.setValue(boxes.length);
             break;
         }
     }
@@ -164,28 +194,29 @@ function setup(shaders)
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mModelView"), false, flatten(modelView()));
     }
 
-    const BOX_GRAVITY = 0.5;
-    let boxThrowMovement = 0;
     function DropBox()
     {
+        let boxThrowMovement = 0;
         for(let b of boxes){
-            b.boxTime += SPEED;
-            if(b.boxTime - SPEED <= 5 * SECOND) {
+            b.boxTime += worldOptions.Speed;
+            if(b.boxTime - worldOptions.Speed <= 5 * SECOND) {
             pushMatrix();
-                b.height = b.height - b.boxTime**2 * BOX_GRAVITY;
+                b.height = b.height - b.boxTime**2 * boxOptions.Mass;
                 if(b.height <= 0.0) //If box reaches ground
                     b.reachedGround = 0;
                 else
-                    b.reachGroundTime += SPEED; //reachGroundTime stops incrementing when it reaches the ground
+                    b.reachGroundTime += worldOptions.Speed; //reachGroundTime stops incrementing when it reaches the ground
                 multRotationY((360 * b.heliTime) - 45);
-                boxThrowMovement = (unitsAwayFromCenter - unitsAwayFromCenter/3.5) + (b.reachGroundTime * b.motorVelocity)/3;
+                boxThrowMovement = (heliOptions.Radius - heliOptions.Radius/3.5) + (b.reachGroundTime * b.motorVelocity)/3;
                 multTranslation([boxThrowMovement, b.height * b.reachedGround , boxThrowMovement]);
                 multRotationY(180 * b.reachGroundTime);
+                multScale([boxOptions.Scale,boxOptions.Scale, boxOptions.Scale]);
                 CargoBox();
             popMatrix();
             }
         else
             boxes.splice(boxes.indexOf(b),1);
+        nBoxes.setValue(boxes.length);
         }
     }
 
@@ -196,7 +227,7 @@ function setup(shaders)
         multScale([50.0, 0.05 , 50.0]);
         
         uploadModelView();
-        CUBE.draw(gl, program, mode);
+        CUBE.draw(gl, program, worldOptions.Mode);
         popMatrix();
     }
 
@@ -206,7 +237,7 @@ function setup(shaders)
         multScale([0.9, 0.5, 0.5]);
 
         uploadModelView();
-        SPHERE.draw(gl, program, mode);
+        SPHERE.draw(gl, program, worldOptions.Mode);
     }
 
     function Tail()
@@ -216,7 +247,7 @@ function setup(shaders)
 
 
         uploadModelView();
-        SPHERE.draw(gl, program, mode);
+        SPHERE.draw(gl, program, worldOptions.Mode);
     }
 
     function TailFin()
@@ -226,7 +257,7 @@ function setup(shaders)
         multScale([0.3, 0.15, 0.15]);
 
         uploadModelView();
-        SPHERE.draw(gl, program, mode);
+        SPHERE.draw(gl, program, worldOptions.Mode);
     }
 
     function Mast()
@@ -235,7 +266,7 @@ function setup(shaders)
         multScale([0.025, 0.08, 0.025]);
 
         uploadModelView();
-        CYLINDER.draw(gl, program, mode);
+        CYLINDER.draw(gl, program, worldOptions.Mode);
     }
 
     function TailMast()
@@ -245,14 +276,14 @@ function setup(shaders)
         multScale([0.025, 0.08, 0.025]);
 
         uploadModelView();
-        CYLINDER.draw(gl, program, mode);
+        CYLINDER.draw(gl, program, worldOptions.Mode);
     }
 
     function TailBlade()
     {
         multScale([0.4, 0.015, 0.02]);
         uploadModelView();
-        SPHERE.draw(gl, program, mode);
+        SPHERE.draw(gl, program, worldOptions.Mode);
     }
 
     function TailBlades()
@@ -274,7 +305,7 @@ function setup(shaders)
         multScale([1, 0.03, 0.025]);
 
         uploadModelView();
-        CYLINDER.draw(gl, program, mode); 
+        CYLINDER.draw(gl, program, worldOptions.Mode); 
     }
 
     function LandingSkids()
@@ -294,7 +325,7 @@ function setup(shaders)
         multScale([0.3, 0.015, 0.02]);
 
         uploadModelView();
-        CUBE.draw(gl, program, mode);
+        CUBE.draw(gl, program, worldOptions.Mode);
     }
    
     function Connections()
@@ -331,7 +362,7 @@ function setup(shaders)
         multScale([1.0, 0.015, 0.05]);
 
         uploadModelView();
-        SPHERE.draw(gl, program, mode);
+        SPHERE.draw(gl, program, worldOptions.Mode);
     }
    
     function Blades()
@@ -387,74 +418,76 @@ function setup(shaders)
 
     function updateHeight()
     {   
+        heliHeight.setValue(height.toFixed(1));
         let heightFactorOnSpeed = height * 0.3; //Controls the blade speed according to the height
         //(the highest the helicopter is, the fastest the blades spin)
         if(motorVelocity == 0){
-           height -= 0.04 * VELOCITY_FACTOR;
+           height -= 0.04 * heliOptions.Speed;
            if(height > 0) //When the helicopter is falling
-           bladeTime += heightFactorOnSpeed * SPEED * VELOCITY_FACTOR*3;
+           bladeTime += heightFactorOnSpeed * worldOptions.Speed * heliOptions.Speed*3;
         }else{
-            bladeTime += (heightFactorOnSpeed + 0.2) * SPEED * motorVelocity * VELOCITY_FACTOR*3; //Smoothing the blade stopping animation
+            bladeTime += (heightFactorOnSpeed + 0.2) * worldOptions.Speed * motorVelocity * heliOptions.Speed*3; //Smoothing the blade stopping animation
         if(motorVelocity == 1)
-            height -= 0.01 * VELOCITY_FACTOR;
+            height -= 0.01 * heliOptions.Speed;
         if(motorVelocity == 2)
-            height -= 0.005 * VELOCITY_FACTOR;
+            height -= 0.005 * heliOptions.Speed;
         if(motorVelocity == 4)
-            height += 0.0025 * VELOCITY_FACTOR;
+            height += 0.0025 * heliOptions.Speed;
         if(motorVelocity == 5)
-            height += 0.005 * VELOCITY_FACTOR;
+            height += 0.005 * heliOptions.Speed;
         if(motorVelocity == 6)
-            height += 0.0075 * VELOCITY_FACTOR;
+            height += 0.0075 * heliOptions.Speed;
         if(motorVelocity == 7)
-            height += 0.01 * VELOCITY_FACTOR;
+            height += 0.01 * heliOptions.Speed;
         if(motorVelocity == 8)
-            height += 0.02 * VELOCITY_FACTOR;
+            height += 0.02 * heliOptions.Speed;
         }
 
         if(height < FLOOR)
             height = FLOOR;
-        else if (height > CEILING)
-            height = CEILING;
+        else if (height > worldOptions.Ceiling)
+            height = worldOptions.Ceiling;
     }
 
     function HelicopterMovement()
     {
-            updateHeight();
-            multTranslation([unitsAwayFromCenter, height, 0.0]); // Initial Helicopter pos
+        
+        updateHeight();
+        multTranslation([heliOptions.Radius, height, 0.0]); // Initial Helicopter pos
+        multRotationY(-90);
+        if(isMovingLeft && height > FLOOR) { // Can move only when it s in the air and key is pressed.
+            heliTime += worldOptions.Speed * (motorVelocity + 1) * heliOptions.Speed/5; //(motorVelocity + 1) so that it can move left while falling
+            multTranslation([0.0, 0.0, heliOptions.Radius]); // Translation to rotation on Y.
+            multRotationY(360 * heliTime);
+            multTranslation([heliOptions.Radius, 0, 0.0]); // Radius of Y rotation
+            multRotationY(-90); // Helicopter front in direction to the movement.
+            leaningAngle < 0 ? leaningAngle = 0 : leaningAngle = leaningAngle + 0.5;
+            multRotationX(leaningAngle * motorVelocity/MAXIMUM_VELOCITY_LEVEL);// Helicopter twisting sideways to make left movement realistic.
+            multRotationZ(leaningAngle * motorVelocity/MAXIMUM_VELOCITY_LEVEL); // Helicopter Z angle (30 dg maximum) that changes acording to speed
+            heliLeanAng.setValue(leaningAngle * motorVelocity/MAXIMUM_VELOCITY_LEVEL);
+            //Stabilization
+            if(leaningAngle == 30) //gradual acceleration
+                leaningAngle = leaningAngle - 0.5;
+            if(leaningAngle >= 1 && height <= 0.27) //soft landing
+                leaningAngle--;
+                if(motorVelocity <= 1) //So that the helicopter model doesnt enter the ground.
+                    leaningAngle <= 0 ? leaningAngle = -0.1 : leaningAngle = leaningAngle - 3;
+        }
+        else{
+            multTranslation([0.0, 0.0, heliOptions.Radius]);
+            multRotationY(360 * heliTime);
+            multTranslation([heliOptions.Radius, 0, 0.0]);
             multRotationY(-90);
-            if(isMovingLeft && height > FLOOR) { // Can move only when it s in the air and key is pressed.
-                heliTime += SPEED * (motorVelocity + 1) * VELOCITY_FACTOR/5; //(motorVelocity + 1) so that it can move left while falling
-                multTranslation([0.0, 0.0, unitsAwayFromCenter]); // Translation to rotation on Y.
-                multRotationY(360 * heliTime);
-                multTranslation([unitsAwayFromCenter, 0, 0.0]); // Radius of Y rotation
-                multRotationY(-90); // Helicopter front in direction to the movement.
-                leaningAngle < 0 ? leaningAngle = 0 : leaningAngle = leaningAngle + 0.5;
-                multRotationX(leaningAngle/MAXIMUM_VELOCITY_LEVEL * motorVelocity);// Helicopter twisting sideways to make left movement realistic.
-                multRotationZ(leaningAngle/MAXIMUM_VELOCITY_LEVEL * motorVelocity); // Helicopter Z angle (30 dg maximum) that changes acording to speed
-                //Stabilization
-                if(leaningAngle >= 30) //gradual acceleration
-                    leaningAngle = leaningAngle - 0.5;
+            //Stabilization mechanism
+            if(leaningAngle > 0){
+                leaningAngle = leaningAngle - 0.5;
+                multRotationX(leaningAngle);
+                multRotationZ(leaningAngle);
                 if(leaningAngle >= 1 && height <= 0.27) //soft landing
                     leaningAngle--;
-                    if(motorVelocity <= 1) //So that the helicopter model doesnt enter the ground.
-                        leaningAngle <= 0 ? leaningAngle = -0.1 : leaningAngle = leaningAngle - 3;
-            }
-            else{
-                multTranslation([0.0, 0.0, unitsAwayFromCenter]);
-                multRotationY(360 * heliTime);
-                multTranslation([unitsAwayFromCenter, 0, 0.0]);
-                multRotationY(-90);
-                //Stabilization mechanism
-                if(leaningAngle > 0){
-                    leaningAngle = leaningAngle - 0.5;
-                    multRotationX(leaningAngle);
-                    multRotationZ(leaningAngle);
-                    if(leaningAngle >= 1 && height <= 0.27) //soft landing
-                        leaningAngle--;
-                } else
-                    leaningAngle = 0;
-                
-            }
+            } else
+                leaningAngle = 0;
+        }
     }
 
     function Helicopter()
@@ -462,6 +495,7 @@ function setup(shaders)
         multScale([2.5,2.5,2.5]);
         pushMatrix();
             HelicopterMovement();
+            multScale([heliOptions.Scale,heliOptions.Scale,heliOptions.Scale]);
             HelicopterParts();
         popMatrix();
 
@@ -472,7 +506,7 @@ function setup(shaders)
         multTranslation([0.0, 0.425, 0.52]);
         multScale([1.0,0.1,0.1]);
         uploadModelView();
-        CUBE.draw(gl, program, mode);
+        CUBE.draw(gl, program, worldOptions.Mode);
     }
 
     function Cross()
@@ -513,7 +547,7 @@ function setup(shaders)
     function CargoBody()
     {
             uploadModelView();
-            CUBE.draw(gl, program, mode);
+            CUBE.draw(gl, program, worldOptions.Mode);
     }
 
     function CargoBox()
@@ -570,7 +604,7 @@ function setup(shaders)
             multRotationZ(45);
             multScale([0.075,2.0,0.075]);
             uploadModelView();
-            CUBE.draw(gl, program, mode);
+            CUBE.draw(gl, program, worldOptions.Mode);
         popMatrix();
     }
 
@@ -581,7 +615,7 @@ function setup(shaders)
             multTranslation([0.0,1.25,0.0]);
             multScale([0.075,2.5,0.075]);
             uploadModelView();
-            CUBE.draw(gl, program, mode);
+            CUBE.draw(gl, program, worldOptions.Mode);
         popMatrix();
     }
 
@@ -592,7 +626,7 @@ function setup(shaders)
             multTranslation([0.0,1.0,0.0]);
             multScale([0.3,2.0,3.0]);
             uploadModelView();
-            CUBE.draw(gl, program, mode);
+            CUBE.draw(gl, program, worldOptions.Mode);
         popMatrix();
     }
 
@@ -683,14 +717,14 @@ function setup(shaders)
             multTranslation([22.6,3.5,-22.6]);
             multScale([4.5, 7.0, 4.5]);
             uploadModelView();
-            CUBE.draw(gl, program, mode);
+            CUBE.draw(gl, program, worldOptions.Mode);
         popMatrix();
     }
     function BuildingDestruction() {     
         pushMatrix();
             multScale([0.5, 2.0, 4.5]);
             uploadModelView();
-            CUBE.draw(gl, program, mode);
+            CUBE.draw(gl, program, worldOptions.Mode);
         popMatrix();
     }
 
@@ -803,7 +837,7 @@ function setup(shaders)
             multTranslation([0.0,0.0,0.07]);
             multScale([0.15,0.15,0.1]);
             uploadModelView();
-            SPHERE.draw(gl, program, mode);
+            SPHERE.draw(gl, program, worldOptions.Mode);
         popMatrix();
         
     }
@@ -813,13 +847,13 @@ function setup(shaders)
         pushMatrix();
             multScale([1.5,0.3,0.1]);
             uploadModelView();
-            SPHERE.draw(gl, program, mode);
+            SPHERE.draw(gl, program, worldOptions.Mode);
         popMatrix();
         pushMatrix();
             multTranslation([0.0,0.0,0.03])
             multScale([1.5,0.2,0.1]);
             uploadModelView();
-            SPHERE.draw(gl, program, mode);
+            SPHERE.draw(gl, program, worldOptions.Mode);
         popMatrix();
         pushMatrix();
             multScale([1.25,1.25,1.25]);
@@ -858,30 +892,30 @@ function setup(shaders)
             multRotationZ(-88);
             multScale([0.1,3.0,0.1]);
             uploadModelView();
-            CYLINDER.draw(gl, program, mode);
+            CYLINDER.draw(gl, program, worldOptions.Mode);
             pushMatrix();
                 multTranslation([0.0,0.5,0.0]);
                 multScale([1.5,0.1,1.5]);
                 uploadModelView();
-                CYLINDER.draw(gl, program, mode); 
+                CYLINDER.draw(gl, program, worldOptions.Mode); 
             popMatrix();
             pushMatrix();
                 multTranslation([0.0,-0.15,0.0]);
                 multScale([3.0,0.1,3.0]);
                 uploadModelView();
-                CYLINDER.draw(gl, program, mode); 
+                CYLINDER.draw(gl, program, worldOptions.Mode); 
             popMatrix();
             pushMatrix();
                 multTranslation([0.0,-0.05,0.0]);
                 multScale([2.0,0.1,2.0]);
                 uploadModelView();
-                CYLINDER.draw(gl, program, mode); 
+                CYLINDER.draw(gl, program, worldOptions.Mode); 
             popMatrix();
             pushMatrix();
                 multTranslation([0.0,0.0,0.0]);
                 multScale([1.5,0.1,1.5]);
                 uploadModelView();
-                CYLINDER.draw(gl, program, mode); 
+                CYLINDER.draw(gl, program, worldOptions.Mode); 
             popMatrix();
         popMatrix();
     }
@@ -897,7 +931,7 @@ function setup(shaders)
             multTranslation([0.0,0.09,0.0]);
             multScale([1.5,0.15,1.5]);
             uploadModelView();
-            CUBE.draw(gl, program, mode);
+            CUBE.draw(gl, program, worldOptions.Mode);
         popMatrix();
         //Init TankHead
         pushMatrix();
@@ -906,7 +940,7 @@ function setup(shaders)
                 multTranslation([0.0,0.3,0.0]);
                 multScale([0.4,0.2,0.8]);
                 uploadModelView();
-                CUBE.draw(gl, program, mode);
+                CUBE.draw(gl, program, worldOptions.Mode);
                 multTranslation([0.0,0.1,0.0]);
                 TankCannon();
                 multTranslation([-0.75,0.5,0.2]);
@@ -915,30 +949,30 @@ function setup(shaders)
                     multRotationZ(65);
                     multScale([0.02,0.75,0.04]);
                     uploadModelView();
-                    CYLINDER.draw(gl, program, mode);
+                    CYLINDER.draw(gl, program, worldOptions.Mode);
                 popMatrix();
                 pushMatrix();
                     multTranslation([0.33,-0.12,0.0]);
                     multScale([0.1,0.3,0.1]);
                     uploadModelView();
-                    SPHERE.draw(gl, program, mode);
+                    SPHERE.draw(gl, program, worldOptions.Mode);
                 popMatrix();
                 pushMatrix();
                     multTranslation([0.75,0.2,0.0]);
                     multRotationX(90);
                     multScale([0.3,0.3,0.3]);
                     uploadModelView();
-                    SPHERE.draw(gl, program, mode);
+                    SPHERE.draw(gl, program, worldOptions.Mode);
                     multTranslation([0.0,-1.3,0.0]);
                     uploadModelView();
-                    SPHERE.draw(gl, program, mode);
+                    SPHERE.draw(gl, program, worldOptions.Mode);
                 popMatrix();
             popMatrix();
                 multTranslation([0.0,0.4,0.0]);
                 multScale([0.2,0.2,0.4]);
                 multRotationY(120 * time);
                 uploadModelView();
-                SPHERE.draw(gl, program, mode);
+                SPHERE.draw(gl, program, worldOptions.Mode);
                 multTranslation([0.0,0.2,0.0]);
                 multScale([0.5,0.5,0.5]);
                 TankCannon();
@@ -948,7 +982,7 @@ function setup(shaders)
             multTranslation([0.0,0.24,0.0]);
             multScale([1.5,0.15,1.5]);
             uploadModelView();
-            PYRAMID.draw(gl, program, mode);
+            PYRAMID.draw(gl, program, worldOptions.Mode);
         popMatrix();
     }
 
@@ -971,7 +1005,7 @@ function setup(shaders)
         popMatrix();
     }
 
-    function Tanks() 
+    function Tanks()
     {
         gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(.4, .4, .4));
 
@@ -1011,33 +1045,33 @@ function setup(shaders)
             multTranslation([0.0,3.5,0.0]);
             multScale([1.5, 1.5, .04]);
             uploadModelView();
-            CUBE.draw(gl, program, mode);
+            CUBE.draw(gl, program, worldOptions.Mode);
         popMatrix();
         pushMatrix();
             multTranslation([0.0,4.25,0.1]);
             multScale([1.5, 0.2, 0.25]);
             uploadModelView();
-            CUBE.draw(gl, program, mode);
+            CUBE.draw(gl, program, worldOptions.Mode);
         popMatrix();
         pushMatrix();
             multTranslation([0.0,2.75,0.1]);
             multScale([1.5, 0.2, 0.25]);
             uploadModelView();
-            CUBE.draw(gl, program, mode);
+            CUBE.draw(gl, program, worldOptions.Mode);
         popMatrix();
         pushMatrix();
             multTranslation([0.8,3.5,0.1]);
             multRotationZ(-90);
             multScale([1.7, 0.2, 0.25]);
             uploadModelView();
-            CUBE.draw(gl, program, mode);
+            CUBE.draw(gl, program, worldOptions.Mode);
         popMatrix();  
         pushMatrix();
             multTranslation([-0.8,3.5,0.1]);
             multRotationZ(-90);
             multScale([1.7, 0.2, 0.25]);
             uploadModelView();
-            CUBE.draw(gl, program, mode);
+            CUBE.draw(gl, program, worldOptions.Mode);
         popMatrix();                      
     }
 
@@ -1150,7 +1184,7 @@ function setup(shaders)
         gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(.2, .2, .2));
 
         pushMatrix();
-            multTranslation([6.0,0.0,0.0]);
+            multTranslation([10.0,0.0,0.0]);
             WallStake();
             Wall();
         popMatrix();
@@ -1162,7 +1196,7 @@ function setup(shaders)
         /*pushMatrix();
             multTranslation([0.0, 0.5, 0.0]);
             uploadModelView();
-            CUBE.draw(gl, program, mode);
+            CUBE.draw(gl, program, worldOptions.Mode);
         popMatrix();
         */
 
@@ -1173,9 +1207,7 @@ function setup(shaders)
 
     function render()
     {
-        document.getElementById("height").innerHTML = Number((height).toFixed(1));
-        document.getElementById("boxes").innerHTML = boxes.length;
-        time += SPEED;
+        time += worldOptions.Speed;
         window.requestAnimationFrame(render);
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -1187,7 +1219,7 @@ function setup(shaders)
         loadMatrix(mView);
 
         pushMatrix();
-            multScale([s, s, s]);
+            multScale([camera.Zoom, camera.Zoom, camera.Zoom]);
             World();
         popMatrix();
 
