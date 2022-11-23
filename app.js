@@ -720,7 +720,9 @@ function setup(shaders)
             CUBE.draw(gl, program, worldOptions.Mode);
         popMatrix();
     }
-    function BuildingDestruction() {     
+
+    function BuildingDestruction() 
+    {     
         pushMatrix();
             multScale([0.5, 2.0, 4.5]);
             uploadModelView();
@@ -786,25 +788,32 @@ function setup(shaders)
     
     function Buildings()
     {
-    pushMatrix();
-        pushMatrix();
-            multTranslation([22.1,8.0,-24.6]);
-            multRotationY(90);
-            multScale([1.0,1.0,0.8]);
-            BuildingDestruction();
-        popMatrix();
-        pushMatrix();
-            multTranslation([24.35,8.0,-22.6]);
-            multScale([2.0,1.0,1.0]);
-            BuildingDestruction();
-        popMatrix();
-        Building();
-    popMatrix(); 
-    pushMatrix();
-        multTranslation([2.5,0.0,69.5]);
-        multScale([0.9, 1.2, 2.2]);
-        Building();  
-    popMatrix();
+            pushMatrix();
+                multTranslation([22.1,8.0,-24.6]);
+                multRotationY(90);
+                multScale([1.0,1.0,0.8]);
+                BuildingDestruction();
+            popMatrix();
+            pushMatrix();
+                multTranslation([24.35,8.0,-22.6]);
+                multScale([2.0,1.0,1.0]);
+                BuildingDestruction();
+            popMatrix();
+            Building();
+            pushMatrix();
+                multTranslation([2.5,0.0,69.5]);
+                multScale([0.9, 1.2, 2.2]);
+                Building();
+            popMatrix();
+            pushMatrix();
+                gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(1.0,0.3,0.3));
+                multTranslation([22.85,9.9,19.75]);
+                multRotationY(180);
+                multScale([4.1,3.0,10.0]);
+                uploadModelView();
+                PYRAMID.draw(gl, program, worldOptions.Mode);
+            popMatrix();
+            gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(.1, .1, .1));
     }
 
     function AllBuildings()
@@ -918,11 +927,6 @@ function setup(shaders)
                 CYLINDER.draw(gl, program, worldOptions.Mode); 
             popMatrix();
         popMatrix();
-    }
-
-    function TankHatch()
-    {
-
     }
 
     function TankBody()
