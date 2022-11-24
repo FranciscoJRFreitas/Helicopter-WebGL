@@ -147,7 +147,7 @@ function setup(shaders)
 
     document.getElementById("firstPersonView").onclick = function changeFirstPersonView() {
         firstPerson = true;
-        mProjection = perspective(0.1, aspect, 5, 50);
+        mProjection = ortho(-aspect, aspect, -1, 1, -20,40);
     }
 
     document.onkeydown = function(event) {
@@ -1034,28 +1034,70 @@ function setup(shaders)
         popMatrix();
 
         pushMatrix();
-            multTranslation([-5.0,0.15,10.0]);
+            multTranslation([-2.5,0.15,11.0]);
             multRotationY(10);
             Tank();
         popMatrix();
 
         pushMatrix();
-            multTranslation([-5.0,0.15,-10.0]);
-            multRotationY(-10);
+            multTranslation([5.0,0.15,-20.0]);
+            multRotationY(-20);
             Tank();
         popMatrix();
 
         pushMatrix();
-            multTranslation([-10.0,0.15,20.0]);
+            multTranslation([5.0,0.15,20.0]);
             multRotationY(20);
             Tank();
         popMatrix();
 
         pushMatrix();
-            multTranslation([-10.0,0.15,-20.0]);
+            multTranslation([-2.5,0.15,-11.0]);
+            multRotationY(-10);
+            Tank();
+        popMatrix();
+
+        pushMatrix();
+            multTranslation([-7.5,0.15,20.0]);
+            multRotationY(20);
+            Tank();
+        popMatrix();
+
+        pushMatrix();
+            multTranslation([-7.5,0.15,-20.0]);
             multRotationY(-20);
             Tank();
         popMatrix();
+
+        pushMatrix();
+            multTranslation([-15.0,0.15,10.0]);
+            multRotationY(10);
+            Tank();
+        popMatrix();
+
+        pushMatrix();
+            multTranslation([-15.0,0.15,-10.0]);
+            multRotationY(-10);
+            Tank();
+        popMatrix();
+
+        pushMatrix();
+            multTranslation([-20.0,0.15,20.0]);
+            multRotationY(20);
+            Tank();
+        popMatrix();
+
+        pushMatrix();
+            multTranslation([-20.0,0.15,-20.0]);
+            multRotationY(-20);
+            Tank();
+        popMatrix();
+
+        pushMatrix();
+            multTranslation([-12.5,0.15,0.0]);
+            Tank();
+        popMatrix();
+
     }
 
     function Window() 
@@ -1228,10 +1270,9 @@ function setup(shaders)
         if(firstPerson){
             
             mModel = mult(inverse(mView), heliView);
-            posCamera = mult(mModel, vec4(-0.45,0.0,0.0,1.0));
-            atCamera = mult(mModel, vec4(-0.45 - 5,0.5,0.0,1.0));
-            mView = lookAt([-posCamera[0] - 15, posCamera[1], posCamera[2]], [atCamera[0] +30, atCamera[1], atCamera[2]], [0,1,0]);
-            
+            posCamera = mult(mModel, vec4(0.0,0.0,0.0,1.0));
+            atCamera = mult(mModel, vec4(0.0,0.0,2.0,1.0));
+            mView = lookAt([posCamera[0], posCamera[1], posCamera[2]], [atCamera[0], atCamera[1], atCamera[2]], [0,1,0]);
             console.log("atcam", atCamera);
         }
         else{
