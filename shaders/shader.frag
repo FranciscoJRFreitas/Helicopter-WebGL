@@ -23,6 +23,4 @@ void main() {
                 gl_FragColor = vec4(uColor * (vec3(1.0,0.1,0.8) + fNormal),1.0);
         if(uColor == vec3(0.0, 0.6, 0.09))
                 gl_FragColor = vec4(uColor,1.0);
-                
-
 }
