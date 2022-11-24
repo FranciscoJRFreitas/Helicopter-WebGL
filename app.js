@@ -1,5 +1,5 @@
 import { buildProgramFromSources, loadShadersFromURLS, setupWebGL } from "./libs/utils.js";
-import { ortho, lookAt, flatten, vec3, scale, rotateX, rotateZ, rotateY, rotate, mult, translate } from "./libs/MV.js";
+import { perspective, ortho, lookAt, flatten, vec3, vec4, scale, rotateX, rotateZ, rotateY, rotate, mult, translate, inverse } from "./libs/MV.js";
 import {modelView, loadMatrix, multRotationY, multScale, multTranslation, popMatrix, pushMatrix, multRotationX, multRotationZ} from "./libs/stack.js";
 
 import * as SPHERE from './libs/objects/sphere.js';
@@ -32,6 +32,10 @@ let leaningAngle = 0;
 let heliTime = 0;
 let bladeTime = 0;
 let mView = lookAt([1.0, 0.5, 1.0], [-5.0, -2.5, -5.0], [0,1,0]);
+let heliView;
+let posCamera;
+let atCamera;
+let firstPerson = false;
 
 const camera = new function(){
     this.Zoom = CONSTSCALE;
@@ -84,31 +88,33 @@ function setup(shaders)
     worldOptions.Mode = gl.TRIANGLES;
     worldOptFolder.add(worldOptions, "Speed", SPEED/3, SPEED * 10);
     worldOptFolder.add(worldOptions, "Ceiling", 5, 20);
-    worldOptFolder.open();
+    worldOptFolder.close();
 
     const heliOptFolder = gui.addFolder('Helicopter Options');
+    var heliMVel = heliOptFolder.add(heliOptions, "MotorVelocity", motorVelocity).name("Motor Velocity");
+    var heliHeight = heliOptFolder.add(heliOptions, "Height", height);
+    var heliLeanAng = heliOptFolder.add(heliOptions, "LeaningAngle", leaningAngle).name("Leaning Angle");
     heliOptFolder.add(heliOptions, "Speed", VELOCITY_FACTOR/2, VELOCITY_FACTOR * 5);
     heliOptFolder.add(heliOptions, "Scale", 0.2, 3);
-    var heliHeight = heliOptFolder.add(heliOptions, "Height", height);
-    var heliMVel = heliOptFolder.add(heliOptions, "MotorVelocity", motorVelocity).name("Motor Velocity");
     heliOptFolder.add(heliOptions, "Radius", 3, 9).name("Trajectory Radius");
-    var heliLeanAng = heliOptFolder.add(heliOptions, "LeaningAngle", leaningAngle).name("Leaning Angle");
-    heliOptFolder.open();
+    heliOptFolder.close();
 
-    const boxOptFolder = gui.addFolder('Box Options');
+    const boxOptFolder = gui.addFolder('Supply Box Options');
     var nBoxes = boxOptFolder.add(boxOptions, "Number", boxes.length);
     boxOptFolder.add(boxOptions, "Mass", 0.25, 2.0);
     boxOptFolder.add(boxOptions, "Scale", 1.0, 3.0);
-    boxOptFolder.open();
+    boxOptFolder.close();
 
     resize_canvas();
     window.addEventListener("resize", resize_canvas);
 
     gamaCam.onChange( function(){
+        firstPerson = false;
         mView = mult(lookAt([1.0, 0.5, 1.0], [-5.0, -2.5, -5.0], [0,1,0]), mult(rotateY(camera.Gama), rotateX(camera.Theta)));
     });
 
     thetaCam.onChange( function(){
+        firstPerson = false;
         mView = mult(lookAt([1.0, 0.5, 1.0], [-5.0, -2.5, -5.0], [0,1,0]), mult(rotateY(camera.Gama), rotateX(camera.Theta)));
     });
 
@@ -120,19 +126,28 @@ function setup(shaders)
     });
 
     document.getElementById("normalView").onclick = function changeNormalView() {
+        firstPerson = false;
         mView = lookAt([1,1,1], [0,0.1,0], [0,1,0]);
     }
 
     document.getElementById("frontView").onclick = function changeFrontView() {
+        firstPerson = false;
         mView = lookAt([1, 0.5, 0], [0, 0.5, 0.0], [0,1,0]);
     }
 
     document.getElementById("topView").onclick = function changeTopView() {
+        firstPerson = false;
         mView = lookAt([0, 1.5, 0], [0, 0.5, 0.0], [0,0,-1]);
     }
 
     document.getElementById("rightSideView").onclick = function changeRightSideView() {
+        firstPerson = false;
         mView = lookAt([0, 0.5, 1], [0, 0.5, 0.0], [0,1,0]);
+    }
+
+    document.getElementById("firstPersonView").onclick = function changeFirstPersonView() {
+        firstPerson = true;
+        mProjection = perspective(0.1, aspect, 5, 50);
     }
 
     document.onkeydown = function(event) {
@@ -497,8 +512,8 @@ function setup(shaders)
             HelicopterMovement();
             multScale([heliOptions.Scale,heliOptions.Scale,heliOptions.Scale]);
             HelicopterParts();
+            heliView = modelView();
         popMatrix();
-
     }
 
     function CargoBoxSide() 
@@ -1197,24 +1212,31 @@ function setup(shaders)
 
         Tanks();
 
-        /*pushMatrix();
-            multTranslation([0.0, 0.5, 0.0]);
-            uploadModelView();
-            CUBE.draw(gl, program, worldOptions.Mode);
-        popMatrix();
-        */
-
         gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.3, 0.3, 0.3)); //Ground color
 
         Ground();
     }
-
+    let passed = true;
+    let mModel;
     function render()
     {
         time += worldOptions.Speed;
         window.requestAnimationFrame(render);
 
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        if(firstPerson){
+            
+            mModel = mult(inverse(mView), heliView);
+            posCamera = mult(mModel, vec4(-0.45,0.0,0.0,1.0));
+            atCamera = mult(mModel, vec4(-0.45 - 5,0.5,0.0,1.0));
+            mView = lookAt([-posCamera[0] - 15, posCamera[1], posCamera[2]], [atCamera[0] +30, atCamera[1], atCamera[2]], [0,1,0]);
+            
+            console.log("atcam", atCamera);
+        }
+        else{
+            mProjection = ortho(-aspect, aspect, -1, 1,-5,5);
+        }
         
         gl.useProgram(program);
 
