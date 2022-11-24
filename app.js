@@ -1,5 +1,5 @@
 import { buildProgramFromSources, loadShadersFromURLS, setupWebGL } from "./libs/utils.js";
-import { perspective, ortho, lookAt, flatten, vec3, vec4, scale, rotateX, rotateZ, rotateY, rotate, mult, translate, inverse } from "./libs/MV.js";
+import { ortho, lookAt, flatten, vec3, vec4, rotateX, rotateY, mult, inverse} from "./libs/MV.js";
 import {modelView, loadMatrix, multRotationY, multScale, multTranslation, popMatrix, pushMatrix, multRotationX, multRotationZ} from "./libs/stack.js";
 
 import * as SPHERE from './libs/objects/sphere.js';
@@ -17,7 +17,7 @@ const CEILING = 15;
 const FLOOR = 0;
 const SPEED = 0.005; // Speed (how many time units added to time on each render pass
 const SECOND = 60 * SPEED; //Speed increments one time per second.
-const CONSTSCALE = 0.03; //World Scale
+const WORLDSCALE = 0.024; //World Scale
 const UNITSAWAYFROMCENTER = 4.0; // radius of helicopter s circular movement | CONSTANT VS VARIABLE
 
 /** @type WebGLRenderingContext */
@@ -26,6 +26,7 @@ let gl;
 let time = 0;           // Global simulation time
 let motorVelocity = 0;
 let height = 0;
+let s = WORLDSCALE;
 let isMovingLeft = false;
 let boxes = [];
 let leaningAngle = 0;
@@ -35,10 +36,11 @@ let mView = lookAt([1.0, 0.5, 1.0], [-5.0, -2.5, -5.0], [0,1,0]);
 let heliView;
 let posCamera;
 let atCamera;
-let firstPerson = false;
+let mModel;
+let thirdPerson = false;
 
 const camera = new function(){
-    this.Zoom = CONSTSCALE;
+    this.Zoom = 100;
     this.Gama = 0;
     this.Theta = 0;
 }
@@ -64,6 +66,16 @@ const boxOptions = new function(){
     this.Scale = 1.0;
 }
 
+const resetCam = { 
+    reset:function() {
+        thirdPerson = false;
+        camera.Gama = 0;
+        camera.Theta = 0;
+        mView = mult(lookAt([1.0, 0.5, 1.0], [-5.0, -2.5, -5.0], [0,1,0]), mult(rotateY(camera.Gama), rotateX(camera.Theta))); 
+        camera.Zoom = 100;
+    }
+};
+
 function setup(shaders)
 {
     let canvas = document.getElementById("gl-canvas");
@@ -76,11 +88,12 @@ function setup(shaders)
     let mProjection = ortho(-aspect, aspect, -1, 1,-5,5);
 
     const gui = new GUI();
-
+    
     const camOptFolder = gui.addFolder('Camera Options');
-    camOptFolder.add(camera, "Zoom", CONSTSCALE/3, CONSTSCALE * 10);
-    var gamaCam = camOptFolder.add(camera, "Gama", -180, 180);
-    var thetaCam = camOptFolder.add(camera, "Theta", -180, 180);
+    camOptFolder.add(camera, "Zoom", 50, 1000).name("Zoom (%)").listen();
+    var gamaCam = camOptFolder.add(camera, "Gama", -180, 180).name("Gama (º)").listen();
+    var thetaCam = camOptFolder.add(camera, "Theta", -180, 180).name("Theta (º)").listen();
+    camOptFolder.add(resetCam, 'reset').name("Reset Values");
     camOptFolder.open();
 
     const worldOptFolder = gui.addFolder('World Options');
@@ -109,12 +122,12 @@ function setup(shaders)
     window.addEventListener("resize", resize_canvas);
 
     gamaCam.onChange( function(){
-        firstPerson = false;
+        thirdPerson = false;
         mView = mult(lookAt([1.0, 0.5, 1.0], [-5.0, -2.5, -5.0], [0,1,0]), mult(rotateY(camera.Gama), rotateX(camera.Theta)));
     });
 
     thetaCam.onChange( function(){
-        firstPerson = false;
+        thirdPerson = false;
         mView = mult(lookAt([1.0, 0.5, 1.0], [-5.0, -2.5, -5.0], [0,1,0]), mult(rotateY(camera.Gama), rotateX(camera.Theta)));
     });
 
@@ -126,27 +139,27 @@ function setup(shaders)
     });
 
     document.getElementById("normalView").onclick = function changeNormalView() {
-        firstPerson = false;
+        thirdPerson = false;
         mView = lookAt([1,1,1], [0,0.1,0], [0,1,0]);
     }
 
     document.getElementById("frontView").onclick = function changeFrontView() {
-        firstPerson = false;
+        thirdPerson = false;
         mView = lookAt([1, 0.5, 0], [0, 0.5, 0.0], [0,1,0]);
     }
 
     document.getElementById("topView").onclick = function changeTopView() {
-        firstPerson = false;
+        thirdPerson = false;
         mView = lookAt([0, 1.5, 0], [0, 0.5, 0.0], [0,0,-1]);
     }
 
     document.getElementById("rightSideView").onclick = function changeRightSideView() {
-        firstPerson = false;
+        thirdPerson = false;
         mView = lookAt([0, 0.5, 1], [0, 0.5, 0.0], [0,1,0]);
     }
 
-    document.getElementById("firstPersonView").onclick = function changeFirstPersonView() {
-        firstPerson = true;
+    document.getElementById("thirdPersonView").onclick = function changeFirstPersonView() {
+        thirdPerson = true;
         mProjection = ortho(-aspect, aspect, -1, 1, -20,40);
     }
 
@@ -213,6 +226,7 @@ function setup(shaders)
     {
         let boxThrowMovement = 0;
         for(let b of boxes){
+            boxThrowMovement = ((heliOptions.Radius - heliOptions.Radius/3.5) + (b.reachGroundTime * b.motorVelocity)/3);
             b.boxTime += worldOptions.Speed;
             if(b.boxTime - worldOptions.Speed <= 5 * SECOND) {
             pushMatrix();
@@ -222,7 +236,6 @@ function setup(shaders)
                 else
                     b.reachGroundTime += worldOptions.Speed; //reachGroundTime stops incrementing when it reaches the ground
                 multRotationY((360 * b.heliTime) - 45);
-                boxThrowMovement = (heliOptions.Radius - heliOptions.Radius/3.5) + (b.reachGroundTime * b.motorVelocity)/3;
                 multTranslation([boxThrowMovement, b.height * b.reachedGround , boxThrowMovement]);
                 multRotationY(180 * b.reachGroundTime);
                 multScale([boxOptions.Scale,boxOptions.Scale, boxOptions.Scale]);
@@ -237,12 +250,20 @@ function setup(shaders)
 
     function Ground()
     {
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.3, 0.3, 0.3)); //Grey Ground Color
         pushMatrix();
-        multTranslation([0.0, -0.025, 0.0]);
-        multScale([50.0, 0.05 , 50.0]);
-        
-        uploadModelView();
-        CUBE.draw(gl, program, worldOptions.Mode);
+            multTranslation([-7.5, -0.025, 0.0]);
+            multScale([35.0, 0.05 , 50.0]);
+            uploadModelView();
+            CUBE.draw(gl, program, worldOptions.Mode);
+        popMatrix();
+
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.0, 0.6, 0.09)); //Grass Green Ground Color
+        pushMatrix();
+            multTranslation([17.5, -0.025, 0.0]);
+            multScale([15.0, 0.05 , 50.0]);
+            uploadModelView();
+            CUBE.draw(gl, program, worldOptions.Mode);
         popMatrix();
     }
 
@@ -1227,8 +1248,6 @@ function setup(shaders)
             multRotationY(-90);
             Window();
         popMatrix();
-
-
     }
 
     function World()
@@ -1254,39 +1273,34 @@ function setup(shaders)
 
         Tanks();
 
-        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.3, 0.3, 0.3)); //Ground color
-
         Ground();
     }
-    let passed = true;
-    let mModel;
+
     function render()
     {
         time += worldOptions.Speed;
         window.requestAnimationFrame(render);
-
+        gl.useProgram(program);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        if(firstPerson){
+        if(thirdPerson){
             
             mModel = mult(inverse(mView), heliView);
             posCamera = mult(mModel, vec4(0.0,0.0,0.0,1.0));
             atCamera = mult(mModel, vec4(0.0,0.0,2.0,1.0));
             mView = lookAt([posCamera[0], posCamera[1], posCamera[2]], [atCamera[0], atCamera[1], atCamera[2]], [0,1,0]);
-            console.log("atcam", atCamera);
         }
         else{
             mProjection = ortho(-aspect, aspect, -1, 1,-5,5);
         }
-        
-        gl.useProgram(program);
 
         gl.uniformMatrix4fv(gl.getUniformLocation(program, "mProjection"), false, flatten(mProjection));
 
         loadMatrix(mView);
 
+        s = camera.Zoom/100 * WORLDSCALE;
         pushMatrix();
-            multScale([camera.Zoom, camera.Zoom, camera.Zoom]);
+            multScale([s,s,s]);
             World();
         popMatrix();
 
