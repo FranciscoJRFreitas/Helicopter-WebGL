@@ -27,6 +27,7 @@ let time = 0;           // Global simulation time
 let motorVelocity = 0;
 let height = 0;
 let s = WORLDSCALE;
+let CABINE_LENGTH = 0.9;
 let isMovingLeft = false;
 let boxes = [];
 let leaningAngle = 0;
@@ -45,13 +46,13 @@ const camera = new function(){
     this.Theta = 0;
 }
 
-const worldOptions = new function(){
+const worldOpt = new function(){
     this.Speed = SPEED;
     this.Mode = NaN;
     this.Ceiling = CEILING;
 }
 
-const heliOptions = new function(){
+const heli = new function(){
     this.Speed = VELOCITY_FACTOR;
     this.Scale = 1.0;
     this.Height = 0.01;
@@ -60,7 +61,7 @@ const heliOptions = new function(){
     this.LeaningAngle = leaningAngle;
 }
 
-const boxOptions = new function(){
+const box = new function(){
     this.Number = boxes.length;
     this.Mass = BOX_MASS;
     this.Scale = 1.0;
@@ -83,7 +84,7 @@ function setup(shaders)
 
     gl = setupWebGL(canvas);
 
-    let program = buildProgramFromSources(gl, shaders["shader.vert"], shaders["shader.frag"]);
+    let program = buildProgramFromSources(gl, shaders["shader1.vert"], shaders["shader1.frag"]);
 
     let mProjection = ortho(-aspect, aspect, -1, 1,-5,5);
 
@@ -97,25 +98,25 @@ function setup(shaders)
     camOptFolder.open();
 
     const worldOptFolder = gui.addFolder('World Options');
-    var mode = worldOptFolder.add(worldOptions, "Mode", {Lines: "gl.LINES", Solid: "gl.TRIANGLES"}).setValue("gl.TRIANGLES");
-    worldOptions.Mode = gl.TRIANGLES;
-    worldOptFolder.add(worldOptions, "Speed", SPEED/3, SPEED * 10);
-    worldOptFolder.add(worldOptions, "Ceiling", 5, 20);
+    var mode = worldOptFolder.add(worldOpt, "Mode", {Lines: "gl.LINES", Solid: "gl.TRIANGLES"}).setValue("gl.TRIANGLES");
+    worldOpt.Mode = gl.TRIANGLES;
+    worldOptFolder.add(worldOpt, "Speed", SPEED/3, SPEED * 10);
+    worldOptFolder.add(worldOpt, "Ceiling", 5, 20);
     worldOptFolder.close();
 
     const heliOptFolder = gui.addFolder('Helicopter Options');
-    var heliMVel = heliOptFolder.add(heliOptions, "MotorVelocity", motorVelocity).name("Motor Velocity");
-    var heliHeight = heliOptFolder.add(heliOptions, "Height", height);
-    var heliLeanAng = heliOptFolder.add(heliOptions, "LeaningAngle", leaningAngle).name("Leaning Angle");
-    heliOptFolder.add(heliOptions, "Speed", VELOCITY_FACTOR/2, VELOCITY_FACTOR * 5);
-    heliOptFolder.add(heliOptions, "Scale", 0.2, 3);
-    heliOptFolder.add(heliOptions, "Radius", 3, 9).name("Trajectory Radius");
+    var heliMVel = heliOptFolder.add(heli, "MotorVelocity", motorVelocity).name("Motor Velocity");
+    var heliHeight = heliOptFolder.add(heli, "Height", height);
+    var heliLeanAng = heliOptFolder.add(heli, "LeaningAngle", leaningAngle).name("Leaning Angle");
+    heliOptFolder.add(heli, "Speed", VELOCITY_FACTOR/2, VELOCITY_FACTOR * 5);
+    heliOptFolder.add(heli, "Scale", 0.2, 3);
+    heliOptFolder.add(heli, "Radius", 3, 9).name("Trajectory Radius");
     heliOptFolder.close();
 
     const boxOptFolder = gui.addFolder('Supply Box Options');
-    var nBoxes = boxOptFolder.add(boxOptions, "Number", boxes.length);
-    boxOptFolder.add(boxOptions, "Mass", 0.25, 2.0);
-    boxOptFolder.add(boxOptions, "Scale", 1.0, 3.0);
+    var nBoxes = boxOptFolder.add(box, "Number", boxes.length);
+    boxOptFolder.add(box, "Mass", 0.25, 2.0);
+    boxOptFolder.add(box, "Scale", 1.0, 3.0);
     boxOptFolder.close();
 
     resize_canvas();
@@ -133,9 +134,9 @@ function setup(shaders)
 
     mode.onChange( function(){
         if(worldOptFolder.__controllers[0].object.Mode == 'gl.LINES')
-            worldOptions.Mode = gl.LINES;
+            worldOpt.Mode = gl.LINES;
         else
-            worldOptions.Mode = gl.TRIANGLES;
+            worldOpt.Mode = gl.TRIANGLES;
     });
 
     document.getElementById("axonometricView").onclick = function changeAxonometricView() {
@@ -225,12 +226,12 @@ function setup(shaders)
     function DropBox()
     {
         let boxThrowMovement = 0;
-        let radius = heliOptions.Radius - heliOptions.Radius/3.4;
+        let radius = heli.Radius - heli.Radius/3.4;
         for(let b of boxes){
             boxThrowMovement = (b.reachGroundTime * b.motorVelocity)/3;
-            b.boxTime += worldOptions.Speed;
-            if(b.boxTime - worldOptions.Speed <= 5 * SECOND) {
-                b.height = b.height - (0.05 + b.boxTime**2) * boxOptions.Mass;
+            b.boxTime += worldOpt.Speed;
+            if(b.boxTime - worldOpt.Speed <= 5 * SECOND) {
+                b.height = b.height - (0.05 + b.boxTime**2) * box.Mass;
                 if(!b.isMovingLeft)
                     boxThrowMovement = radius;
                 else{
@@ -241,12 +242,12 @@ function setup(shaders)
                 if(b.height <= 0.0) //If box reaches ground
                     b.reachedGround = 0;
                 else
-                    b.reachGroundTime += worldOptions.Speed; //reachGroundTime stops incrementing when it reaches the ground
+                    b.reachGroundTime += worldOpt.Speed; //reachGroundTime stops incrementing when it reaches the ground
                 pushMatrix();
                     multRotationY((360 * b.heliTime)-45);
                     multTranslation([boxThrowMovement, b.height * b.reachedGround , radius]);
                     multRotationY(180 * b.reachGroundTime);
-                    multScale([boxOptions.Scale,boxOptions.Scale, boxOptions.Scale]);
+                    multScale([box.Scale,box.Scale, box.Scale]);
                     CargoBox();
                 popMatrix();
             }
@@ -263,7 +264,7 @@ function setup(shaders)
             multTranslation([-7.5, -0.025, 0.0]);
             multScale([35.0, 0.05 , 50.0]);
             uploadModelView();
-            CUBE.draw(gl, program, worldOptions.Mode);
+            CUBE.draw(gl, program, worldOpt.Mode);
         popMatrix();
 
         gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.0, 0.6, 0.29)); //Grass Green Ground Color
@@ -271,37 +272,39 @@ function setup(shaders)
             multTranslation([17.5, -0.025, 0.0]);
             multScale([15.0, 0.05 , 50.0]);
             uploadModelView();
-            CUBE.draw(gl, program, worldOptions.Mode);
+            CUBE.draw(gl, program, worldOpt.Mode);
         popMatrix();
     }
 
-    function Body()
+    
+
+    function Cabine()
     {   
         multTranslation([0.0, 0.4, 0.0]);
-        multScale([0.9, 0.5, 0.5]);
+        multScale([CABINE_LENGTH, CABINE_LENGTH / 2 + 0.05, CABINE_LENGTH / 2 + 0.05]);
 
         uploadModelView();
-        SPHERE.draw(gl, program, worldOptions.Mode);
+        SPHERE.draw(gl, program, worldOpt.Mode);
     }
 
     function Tail()
     {
         multTranslation([0.75, 0.5, 0.0]);
-        multScale([0.9, 0.15, 0.15]);
+        multScale([CABINE_LENGTH, CABINE_LENGTH/6, CABINE_LENGTH/6]);
 
 
         uploadModelView();
-        SPHERE.draw(gl, program, worldOptions.Mode);
+        SPHERE.draw(gl, program, worldOpt.Mode);
     }
 
     function TailFin()
     {
         multTranslation([1.2, 0.6, 0.0]);
         multRotationZ(60);
-        multScale([0.3, 0.15, 0.15]);
+        multScale([CABINE_LENGTH/3, CABINE_LENGTH/6, CABINE_LENGTH/6]);
 
         uploadModelView();
-        SPHERE.draw(gl, program, worldOptions.Mode);
+        SPHERE.draw(gl, program, worldOpt.Mode);
     }
 
     function Mast()
@@ -311,7 +314,7 @@ function setup(shaders)
         multScale([0.025, 0.08, 0.025]);
 
         uploadModelView();
-        CYLINDER.draw(gl, program, worldOptions.Mode);
+        CYLINDER.draw(gl, program, worldOpt.Mode);
     }
 
     function TailMast()
@@ -322,19 +325,20 @@ function setup(shaders)
         multScale([0.025, 0.08, 0.025]);
 
         uploadModelView();
-        CYLINDER.draw(gl, program, worldOptions.Mode);
+        CYLINDER.draw(gl, program, worldOpt.Mode);
     }
 
     function TailBlade()
     {
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.0, 0.0, 0.0)); //TailBlade color
+        
         multScale([0.4, 0.015, 0.02]);
         uploadModelView();
-        SPHERE.draw(gl, program, worldOptions.Mode);
+        SPHERE.draw(gl, program, worldOpt.Mode);
     }
 
     function TailBlades()
     {
-        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.0, 0.0, 0.0)); //TailBlades color
         pushMatrix();
             multTranslation([0.1, 0.0, 0.0]);
             TailBlade();
@@ -349,10 +353,12 @@ function setup(shaders)
 
     function landingSkid()
     {
-        multScale([1, 0.03, 0.025]);
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.7, 0.3, 0.5)); //landingSkid color
+
+        multScale([CABINE_LENGTH + 0.1, CABINE_LENGTH/30, CABINE_LENGTH/30]);
 
         uploadModelView();
-        CYLINDER.draw(gl, program, worldOptions.Mode); 
+        CYLINDER.draw(gl, program, worldOpt.Mode); 
     }
 
     function LandingSkids()
@@ -369,10 +375,12 @@ function setup(shaders)
 
     function Connection()
     {
-        multScale([0.3, 0.015, 0.02]);
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(1.0, 1.0, 1.0)); //Connection color
+
+        multScale([CABINE_LENGTH/3, CABINE_LENGTH/60, CABINE_LENGTH/60]);
 
         uploadModelView();
-        CUBE.draw(gl, program, worldOptions.Mode);
+        CUBE.draw(gl, program, worldOpt.Mode);
     }
    
     function Connections()
@@ -405,11 +413,13 @@ function setup(shaders)
 
     function Blade()
     {
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.0, 0.0, 0.0)); //Blade color
+
         multTranslation([0.5, 0.7, 0.0]);
-        multScale([1.0, 0.015, 0.05]);
+        multScale([1.0, 0.015, 0.075]);
 
         uploadModelView();
-        SPHERE.draw(gl, program, worldOptions.Mode);
+        SPHERE.draw(gl, program, worldOpt.Mode);
     }
    
     function Blades()
@@ -435,7 +445,7 @@ function setup(shaders)
     {
         gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(1, 0.0, 1.0)); //Helicopter color
         pushMatrix();
-            Body();
+            Cabine();
         popMatrix();
         pushMatrix();
             Tail();
@@ -446,7 +456,6 @@ function setup(shaders)
         pushMatrix();
             TailMast();
         popMatrix();
-        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.0, 0.0, 0.0)); //Blades color
         pushMatrix();
             multRotationY(360 * bladeTime);
             Blades();
@@ -457,7 +466,6 @@ function setup(shaders)
             multRotationZ(360 * bladeTime);
             TailBlades();
         popMatrix();
-        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.0, 0.0, 0.0)); //LandingSkids color
         pushMatrix();
             LandingSkids()
         popMatrix(); 
@@ -472,44 +480,44 @@ function setup(shaders)
         let heightFactorOnSpeed = height * 0.3; //Controls the blade speed according to the height
         //(the highest the helicopter is, the fastest the blades spin)
         if(motorVelocity == 0){
-           height -= 0.04 * heliOptions.Speed;
+           height -= 0.04 * heli.Speed;
            if(height > 0) //When the helicopter is falling
-           bladeTime += worldOptions.Speed * heliOptions.Speed;
+           bladeTime += worldOpt.Speed * heli.Speed;
         }else{
-            bladeTime += (heightFactorOnSpeed + 0.2) * worldOptions.Speed * motorVelocity * heliOptions.Speed*3; //Smoothing the blade stopping animation
+            bladeTime += (heightFactorOnSpeed + 0.2) * worldOpt.Speed * motorVelocity * heli.Speed*3; //Smoothing the blade stopping animation
         if(motorVelocity == 1)
-            height -= 0.01 * heliOptions.Speed;
+            height -= 0.01 * heli.Speed;
         if(motorVelocity == 2)
-            height -= 0.005 * heliOptions.Speed;
+            height -= 0.005 * heli.Speed;
         if(motorVelocity == 4)
-            height += 0.0025 * heliOptions.Speed;
+            height += 0.0025 * heli.Speed;
         if(motorVelocity == 5)
-            height += 0.005 * heliOptions.Speed;
+            height += 0.005 * heli.Speed;
         if(motorVelocity == 6)
-            height += 0.0075 * heliOptions.Speed;
+            height += 0.0075 * heli.Speed;
         if(motorVelocity == 7)
-            height += 0.01 * heliOptions.Speed;
+            height += 0.01 * heli.Speed;
         if(motorVelocity == 8)
-            height += 0.02 * heliOptions.Speed;
+            height += 0.02 * heli.Speed;
         }
 
         if(height < FLOOR)
             height = FLOOR;
-        else if (height > worldOptions.Ceiling)
-            height = worldOptions.Ceiling;
+        else if (height > worldOpt.Ceiling)
+            height = worldOpt.Ceiling;
     }
 
     function HelicopterMovement()
     {
         
         updateHeight();
-        multTranslation([heliOptions.Radius, height, 0.0]); // Initial Helicopter pos
+        multTranslation([heli.Radius, height, 0.0]); // Initial Helicopter pos
         multRotationY(-90);
         if(isMovingLeft && height > FLOOR) { // Can move only when it s in the air and key is pressed.
-            heliTime += worldOptions.Speed * (motorVelocity + 1) * heliOptions.Speed/5; //(motorVelocity + 1) so that it can move left while falling
-            multTranslation([0.0, 0.0, heliOptions.Radius]); // Translation to rotation on Y.
+            heliTime += worldOpt.Speed * (motorVelocity + 1) * heli.Speed/5; //(motorVelocity + 1) so that it can move left while falling
+            multTranslation([0.0, 0.0, heli.Radius]); // Translation to rotation on Y.
             multRotationY(360 * heliTime);
-            multTranslation([heliOptions.Radius, 0, 0.0]); // Radius of Y rotation
+            multTranslation([heli.Radius, 0, 0.0]); // Radius of Y rotation
             multRotationY(-90); // Helicopter front in direction to the movement.
             leaningAngle < 0 ? leaningAngle = 0 : leaningAngle = leaningAngle + 0.5;
             multRotationX(leaningAngle * motorVelocity/MAXIMUM_VELOCITY_LEVEL);// Helicopter twisting sideways to make left movement realistic.
@@ -524,9 +532,9 @@ function setup(shaders)
                     leaningAngle <= 0 ? leaningAngle = -0.1 : leaningAngle = leaningAngle - 3;
         }
         else{
-            multTranslation([0.0, 0.0, heliOptions.Radius]);
+            multTranslation([0.0, 0.0, heli.Radius]);
             multRotationY(360 * heliTime);
-            multTranslation([heliOptions.Radius, 0, 0.0]);
+            multTranslation([heli.Radius, 0, 0.0]);
             multRotationY(-90);
             //Stabilization mechanism
             if(leaningAngle > 0){
@@ -545,7 +553,7 @@ function setup(shaders)
         multScale([2.5,2.5,2.5]);
         pushMatrix();
             HelicopterMovement();
-            multScale([heliOptions.Scale,heliOptions.Scale,heliOptions.Scale]);
+            multScale([heli.Scale,heli.Scale,heli.Scale]);
             HelicopterParts();
             heliView = modelView();
         popMatrix();
@@ -556,7 +564,7 @@ function setup(shaders)
         multTranslation([0.0, 0.425, 0.52]);
         multScale([1.0,0.1,0.1]);
         uploadModelView();
-        CUBE.draw(gl, program, worldOptions.Mode);
+        CUBE.draw(gl, program, worldOpt.Mode);
     }
 
     function Cross()
@@ -596,14 +604,14 @@ function setup(shaders)
 
     function CargoBody()
     {
-            uploadModelView();
-            CUBE.draw(gl, program, worldOptions.Mode);
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.6, 0.3, 0.0)); //Box color
+
+        uploadModelView();
+        CUBE.draw(gl, program, worldOpt.Mode);
     }
 
     function CargoBox()
     {
-        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.6, 0.3, 0.0)); //Box color
-
         pushMatrix();
             multTranslation([0.0, 0.5, 0.0]);
             multScale([0.2,0.2,0.2]);
@@ -648,35 +656,35 @@ function setup(shaders)
 
     function WallSupport()
     {
-        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.3, 0.15, 0.0)); //Sides color
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.3, 0.15, 0.0)); //WallSupport color
         pushMatrix();
             multTranslation([0.8,0.735,0.0]);
             multRotationZ(45);
             multScale([0.075,2.0,0.075]);
             uploadModelView();
-            CUBE.draw(gl, program, worldOptions.Mode);
+            CUBE.draw(gl, program, worldOpt.Mode);
         popMatrix();
     }
 
     function WallStake()
     {
-        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(.2, .2, .2));
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.2, 0.2, 0.2)); //WallStake color
         pushMatrix();
             multTranslation([0.0,1.25,0.0]);
             multScale([0.075,2.5,0.075]);
             uploadModelView();
-            CUBE.draw(gl, program, worldOptions.Mode);
+            CUBE.draw(gl, program, worldOpt.Mode);
         popMatrix();
     }
 
     function WallPart()
     {
-        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(.2, .2, .2));
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.2, 0.2, 0.2)); //WallPart color
         pushMatrix();
             multTranslation([0.0,1.0,0.0]);
             multScale([0.3,2.0,3.0]);
             uploadModelView();
-            CUBE.draw(gl, program, worldOptions.Mode);
+            CUBE.draw(gl, program, worldOpt.Mode);
         popMatrix();
     }
 
@@ -763,20 +771,22 @@ function setup(shaders)
 
     function Building()
     {
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.1, 0.1, 0.1)); //Building color
         pushMatrix();
             multTranslation([22.6,3.5,-22.6]);
             multScale([4.5, 7.0, 4.5]);
             uploadModelView();
-            CUBE.draw(gl, program, worldOptions.Mode);
+            CUBE.draw(gl, program, worldOpt.Mode);
         popMatrix();
     }
 
     function BuildingDestruction() 
     {     
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.1, 0.1, 0.1)); //Building color
         pushMatrix();
             multScale([0.5, 2.0, 4.5]);
             uploadModelView();
-            CUBE.draw(gl, program, worldOptions.Mode);
+            CUBE.draw(gl, program, worldOpt.Mode);
         popMatrix();
     }
 
@@ -820,7 +830,7 @@ function setup(shaders)
         BuildingDestruction();
     popMatrix();
     pushMatrix();
-        multTranslation([15.5,15.5, 0.61]);
+        multTranslation([15.5,15.5, 0.67]);
         multScale([0.3,0.15,0.3]);
         Building();
     popMatrix();
@@ -861,14 +871,13 @@ function setup(shaders)
                 multRotationY(180);
                 multScale([4.1,3.0,10.0]);
                 uploadModelView();
-                PYRAMID.draw(gl, program, worldOptions.Mode);
+                PYRAMID.draw(gl, program, worldOpt.Mode);
             popMatrix();
-            gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(.1, .1, .1));
     }
 
     function AllBuildings()
     {
-        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(.1, .1, .1));
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.1, 0.1, 0.1));
         
         pushMatrix();
             Buildings();
@@ -876,9 +885,139 @@ function setup(shaders)
             BuildingDestructed();
         popMatrix();
 
+        AllWindows();
+    }
+
+    
+    function Window() 
+    {
         gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(.4, .4, .4));
 
-        AllWindows();
+        pushMatrix();
+            multTranslation([0.0,3.5,0.0]);
+            multScale([1.5, 1.5, .04]);
+            uploadModelView();
+            CUBE.draw(gl, program, worldOpt.Mode);
+        popMatrix();
+        pushMatrix();
+            multTranslation([0.0,4.25,0.1]);
+            multScale([1.5, 0.2, 0.25]);
+            uploadModelView();
+            CUBE.draw(gl, program, worldOpt.Mode);
+        popMatrix();
+        pushMatrix();
+            multTranslation([0.0,2.75,0.1]);
+            multScale([1.5, 0.2, 0.25]);
+            uploadModelView();
+            CUBE.draw(gl, program, worldOpt.Mode);
+        popMatrix();
+        pushMatrix();
+            multTranslation([0.8,3.5,0.1]);
+            multRotationZ(-90);
+            multScale([1.7, 0.2, 0.25]);
+            uploadModelView();
+            CUBE.draw(gl, program, worldOpt.Mode);
+        popMatrix();  
+        pushMatrix();
+            multTranslation([-0.8,3.5,0.1]);
+            multRotationZ(-90);
+            multScale([1.7, 0.2, 0.25]);
+            uploadModelView();
+            CUBE.draw(gl, program, worldOpt.Mode);
+        popMatrix();                      
+    }
+
+    function AllWindows() {
+        pushMatrix();
+            multTranslation([20.5,4.5,2.3]);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([20.5,0.5,2.3]);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([18.55,4.5,0.67]);
+            multRotationY(-90);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([18.55,0.5,0.67]);
+            multRotationY(-90);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([18.55,0.5,-6.1]);
+            multRotationY(-90);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([18.55,-1.9,-1.5]);
+            multRotationX(-15);
+            multRotationY(-65);
+            multRotationZ(15);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([18.55,8.5,-6.1]);
+            multRotationY(-90);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([18.55,4.5,-6.1]);
+            multRotationY(-90);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([20.5,8.5,-4.5]);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([22.5,1.8,-20.35]);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([22.5,-1.5,-20.35]);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([20.3,-1.5,-22.7]);
+            multRotationY(-90);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([20.3,1.8,-22.7]);
+            multRotationY(-90);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([23.0,3.0,24.75]);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([23.0,-0.8,24.75]);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([20.8,3.0,22.0]);
+            multRotationY(-90);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([20.8,3.0,18.0]);
+             multRotationY(-90);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([20.8,-0.8,22.0]);
+            multRotationY(-90);
+            Window();
+        popMatrix();
+        pushMatrix();
+            multTranslation([20.8,-0.8,18.0]);
+            multRotationY(-90);
+            Window();
+        popMatrix();
     }
 
     function WheelDetail()
@@ -896,7 +1035,7 @@ function setup(shaders)
             multTranslation([0.0,0.0,0.07]);
             multScale([0.15,0.15,0.1]);
             uploadModelView();
-            SPHERE.draw(gl, program, worldOptions.Mode);
+            SPHERE.draw(gl, program, worldOpt.Mode);
         popMatrix();
         
     }
@@ -906,13 +1045,13 @@ function setup(shaders)
         pushMatrix();
             multScale([1.5,0.3,0.1]);
             uploadModelView();
-            SPHERE.draw(gl, program, worldOptions.Mode);
+            SPHERE.draw(gl, program, worldOpt.Mode);
         popMatrix();
         pushMatrix();
             multTranslation([0.0,0.0,0.03])
             multScale([1.5,0.2,0.1]);
             uploadModelView();
-            SPHERE.draw(gl, program, worldOptions.Mode);
+            SPHERE.draw(gl, program, worldOpt.Mode);
         popMatrix();
         pushMatrix();
             multScale([1.25,1.25,1.25]);
@@ -951,30 +1090,30 @@ function setup(shaders)
             multRotationZ(-88);
             multScale([0.1,3.0,0.1]);
             uploadModelView();
-            CYLINDER.draw(gl, program, worldOptions.Mode);
+            CYLINDER.draw(gl, program, worldOpt.Mode);
             pushMatrix();
                 multTranslation([0.0,0.5,0.0]);
                 multScale([1.5,0.1,1.5]);
                 uploadModelView();
-                CYLINDER.draw(gl, program, worldOptions.Mode); 
+                CYLINDER.draw(gl, program, worldOpt.Mode); 
             popMatrix();
             pushMatrix();
                 multTranslation([0.0,-0.15,0.0]);
                 multScale([3.0,0.1,3.0]);
                 uploadModelView();
-                CYLINDER.draw(gl, program, worldOptions.Mode); 
+                CYLINDER.draw(gl, program, worldOpt.Mode); 
             popMatrix();
             pushMatrix();
                 multTranslation([0.0,-0.05,0.0]);
                 multScale([2.0,0.1,2.0]);
                 uploadModelView();
-                CYLINDER.draw(gl, program, worldOptions.Mode); 
+                CYLINDER.draw(gl, program, worldOpt.Mode); 
             popMatrix();
             pushMatrix();
                 multTranslation([0.0,0.0,0.0]);
                 multScale([1.5,0.1,1.5]);
                 uploadModelView();
-                CYLINDER.draw(gl, program, worldOptions.Mode); 
+                CYLINDER.draw(gl, program, worldOpt.Mode); 
             popMatrix();
         popMatrix();
     }
@@ -985,7 +1124,7 @@ function setup(shaders)
             multTranslation([0.0,0.09,0.0]);
             multScale([1.5,0.15,1.5]);
             uploadModelView();
-            CUBE.draw(gl, program, worldOptions.Mode);
+            CUBE.draw(gl, program, worldOpt.Mode);
         popMatrix();
         //Init TankHead
         pushMatrix();
@@ -994,7 +1133,7 @@ function setup(shaders)
                 multTranslation([0.0,0.3,0.0]);
                 multScale([0.4,0.2,0.8]);
                 uploadModelView();
-                CUBE.draw(gl, program, worldOptions.Mode);
+                CUBE.draw(gl, program, worldOpt.Mode);
                 multTranslation([0.0,0.1,0.0]);
                 TankCannon();
                 multTranslation([-0.75,0.5,0.2]);
@@ -1003,30 +1142,30 @@ function setup(shaders)
                     multRotationZ(65);
                     multScale([0.02,0.75,0.04]);
                     uploadModelView();
-                    CYLINDER.draw(gl, program, worldOptions.Mode);
+                    CYLINDER.draw(gl, program, worldOpt.Mode);
                 popMatrix();
                 pushMatrix();
                     multTranslation([0.33,-0.12,0.0]);
                     multScale([0.1,0.3,0.1]);
                     uploadModelView();
-                    SPHERE.draw(gl, program, worldOptions.Mode);
+                    SPHERE.draw(gl, program, worldOpt.Mode);
                 popMatrix();
                 pushMatrix();
                     multTranslation([0.75,0.2,0.0]);
                     multRotationX(90);
                     multScale([0.3,0.3,0.3]);
                     uploadModelView();
-                    SPHERE.draw(gl, program, worldOptions.Mode);
+                    SPHERE.draw(gl, program, worldOpt.Mode);
                     multTranslation([0.0,-1.3,0.0]);
                     uploadModelView();
-                    SPHERE.draw(gl, program, worldOptions.Mode);
+                    SPHERE.draw(gl, program, worldOpt.Mode);
                 popMatrix();
             popMatrix();
                 multTranslation([0.0,0.4,0.0]);
                 multScale([0.2,0.2,0.4]);
                 multRotationY(120 * time);
                 uploadModelView();
-                SPHERE.draw(gl, program, worldOptions.Mode);
+                SPHERE.draw(gl, program, worldOpt.Mode);
                 multTranslation([0.0,0.2,0.0]);
                 multScale([0.5,0.5,0.5]);
                 TankCannon();
@@ -1036,7 +1175,7 @@ function setup(shaders)
             multTranslation([0.0,0.24,0.0]);
             multScale([1.5,0.15,1.5]);
             uploadModelView();
-            PYRAMID.draw(gl, program, worldOptions.Mode);
+            PYRAMID.draw(gl, program, worldOpt.Mode);
         popMatrix();
     }
 
@@ -1135,135 +1274,6 @@ function setup(shaders)
 
     }
 
-    function Window() 
-    {
-        pushMatrix();
-            multTranslation([0.0,3.5,0.0]);
-            multScale([1.5, 1.5, .04]);
-            uploadModelView();
-            CUBE.draw(gl, program, worldOptions.Mode);
-        popMatrix();
-        pushMatrix();
-            multTranslation([0.0,4.25,0.1]);
-            multScale([1.5, 0.2, 0.25]);
-            uploadModelView();
-            CUBE.draw(gl, program, worldOptions.Mode);
-        popMatrix();
-        pushMatrix();
-            multTranslation([0.0,2.75,0.1]);
-            multScale([1.5, 0.2, 0.25]);
-            uploadModelView();
-            CUBE.draw(gl, program, worldOptions.Mode);
-        popMatrix();
-        pushMatrix();
-            multTranslation([0.8,3.5,0.1]);
-            multRotationZ(-90);
-            multScale([1.7, 0.2, 0.25]);
-            uploadModelView();
-            CUBE.draw(gl, program, worldOptions.Mode);
-        popMatrix();  
-        pushMatrix();
-            multTranslation([-0.8,3.5,0.1]);
-            multRotationZ(-90);
-            multScale([1.7, 0.2, 0.25]);
-            uploadModelView();
-            CUBE.draw(gl, program, worldOptions.Mode);
-        popMatrix();                      
-    }
-
-    function AllWindows() {
-        pushMatrix();
-            multTranslation([20.5,4.5,0.22]);
-            Window();
-        popMatrix();
-        pushMatrix();
-            multTranslation([20.5,0.5,0.22]);
-            Window();
-        popMatrix();
-        pushMatrix();
-            multTranslation([18.55,4.5,-1.32]);
-            multRotationY(-90);
-            Window();
-        popMatrix();
-        pushMatrix();
-            multTranslation([18.55,0.5,-1.32]);
-            multRotationY(-90);
-            Window();
-        popMatrix();
-        pushMatrix();
-            multTranslation([18.55,0.5,-8.1]);
-            multRotationY(-90);
-            Window();
-        popMatrix();
-        pushMatrix();
-            multTranslation([18.55,-1.9,-3.5]);
-            multRotationX(-15);
-            multRotationY(-65);
-            multRotationZ(15);
-            Window();
-        popMatrix();
-        pushMatrix();
-            multTranslation([18.55,8.5,-8.1]);
-            multRotationY(-90);
-            Window();
-        popMatrix();
-        pushMatrix();
-            multTranslation([18.55,4.5,-8.1]);
-            multRotationY(-90);
-            Window();
-        popMatrix();
-        pushMatrix();
-            multTranslation([20.5,8.5,-6.5]);
-            Window();
-        popMatrix();
-        pushMatrix();
-            multTranslation([22.5,1.8,-20.35]);
-            Window();
-        popMatrix();
-        pushMatrix();
-            multTranslation([22.5,-1.5,-20.35]);
-            Window();
-        popMatrix();
-        pushMatrix();
-            multTranslation([20.3,-1.5,-22.7]);
-            multRotationY(-90);
-            Window();
-        popMatrix();
-        pushMatrix();
-            multTranslation([20.3,1.8,-22.7]);
-            multRotationY(-90);
-            Window();
-        popMatrix();
-        pushMatrix();
-            multTranslation([23.0,3.0,24.75]);
-            Window();
-        popMatrix();
-        pushMatrix();
-            multTranslation([23.0,-0.8,24.75]);
-            Window();
-        popMatrix();
-        pushMatrix();
-            multTranslation([20.8,3.0,22.0]);
-            multRotationY(-90);
-            Window();
-        popMatrix();
-        pushMatrix();
-            multTranslation([20.8,3.0,18.0]);
-             multRotationY(-90);
-            Window();
-        popMatrix();
-        pushMatrix();
-            multTranslation([20.8,-0.8,22.0]);
-            multRotationY(-90);
-            Window();
-        popMatrix();
-        pushMatrix();
-            multTranslation([20.8,-0.8,18.0]);
-            multRotationY(-90);
-            Window();
-        popMatrix();
-    }
-
     function World()
     {
         
@@ -1290,7 +1300,7 @@ function setup(shaders)
 
     function render()
     {
-        time += worldOptions.Speed;
+        time += worldOpt.Speed;
         window.requestAnimationFrame(render);
         gl.useProgram(program);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -1319,5 +1329,5 @@ function setup(shaders)
     }
 }
 
-const urls = ["shader.vert", "shader.frag"];
+const urls = ["shader1.vert", "shader1.frag"];
 loadShadersFromURLS(urls).then(shaders => setup(shaders))
