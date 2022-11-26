@@ -138,7 +138,7 @@ function setup(shaders)
             worldOptions.Mode = gl.TRIANGLES;
     });
 
-    document.getElementById("normalView").onclick = function changeNormalView() {
+    document.getElementById("axonometricView").onclick = function changeAxonometricView() {
         thirdPerson = false;
         mView = lookAt([1,1,1], [0,0.1,0], [0,1,0]);
     }
@@ -188,7 +188,7 @@ function setup(shaders)
                 isMovingLeft = false;
             break;
             case " ":
-                boxes.push({height: height, heliTime: heliTime, boxTime: 0, reachedGround: 1, reachGroundTime: 0, motorVelocity: motorVelocity}); //reachedGround: variable to make boxes stop at y = 0.
+                boxes.push({height: height, heliTime: heliTime, boxTime: 0, reachedGround: 1, reachGroundTime: 0, motorVelocity: motorVelocity, isMovingLeft: isMovingLeft}); //reachedGround: variable to make boxes stop at y = 0.
                 nBoxes.setValue(boxes.length);
             break;
         }
@@ -225,22 +225,30 @@ function setup(shaders)
     function DropBox()
     {
         let boxThrowMovement = 0;
+        let radius = heliOptions.Radius - heliOptions.Radius/3.4;
         for(let b of boxes){
-            boxThrowMovement = ((heliOptions.Radius - heliOptions.Radius/3.5) + (b.reachGroundTime * b.motorVelocity)/3);
+            boxThrowMovement = (b.reachGroundTime * b.motorVelocity)/3;
             b.boxTime += worldOptions.Speed;
             if(b.boxTime - worldOptions.Speed <= 5 * SECOND) {
-            pushMatrix();
-                b.height = b.height - b.boxTime**2 * boxOptions.Mass;
+                b.height = b.height - (0.05 + b.boxTime**2) * boxOptions.Mass;
+                if(!b.isMovingLeft)
+                    boxThrowMovement = radius;
+                else{
+                    if((b.reachGroundTime**2 * b.motorVelocity) <= (b.reachGroundTime * 2 * b.motorVelocity))
+                        boxThrowMovement = radius + (b.reachGroundTime * 2 * b.motorVelocity) - (b.reachGroundTime**2 * b.motorVelocity);
+                }
+
                 if(b.height <= 0.0) //If box reaches ground
                     b.reachedGround = 0;
                 else
                     b.reachGroundTime += worldOptions.Speed; //reachGroundTime stops incrementing when it reaches the ground
-                multRotationY((360 * b.heliTime) - 45);
-                multTranslation([boxThrowMovement, b.height * b.reachedGround , boxThrowMovement]);
-                multRotationY(180 * b.reachGroundTime);
-                multScale([boxOptions.Scale,boxOptions.Scale, boxOptions.Scale]);
-                CargoBox();
-            popMatrix();
+                pushMatrix();
+                    multRotationY((360 * b.heliTime)-45);
+                    multTranslation([boxThrowMovement, b.height * b.reachedGround , radius]);
+                    multRotationY(180 * b.reachGroundTime);
+                    multScale([boxOptions.Scale,boxOptions.Scale, boxOptions.Scale]);
+                    CargoBox();
+                popMatrix();
             }
         else
             boxes.splice(boxes.indexOf(b),1);
@@ -460,7 +468,7 @@ function setup(shaders)
         if(motorVelocity == 0){
            height -= 0.04 * heliOptions.Speed;
            if(height > 0) //When the helicopter is falling
-           bladeTime += heightFactorOnSpeed * worldOptions.Speed * heliOptions.Speed*3;
+           bladeTime += worldOptions.Speed * heliOptions.Speed;
         }else{
             bladeTime += (heightFactorOnSpeed + 0.2) * worldOptions.Speed * motorVelocity * heliOptions.Speed*3; //Smoothing the blade stopping animation
         if(motorVelocity == 1)
