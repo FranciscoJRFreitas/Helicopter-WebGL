@@ -10,7 +10,7 @@ import * as BUNNY from './libs/objects/bunny.js';
 import * as TORUS from './libs/objects/torus.js';
 import { GUI } from './libs/dat.gui.module.js';
 
-const VELOCITY_FACTOR = 0.5;
+const VELOCITY_FACTOR = 1.0;
 const BOX_MASS = 0.5;
 const MAXIMUM_VELOCITY_LEVEL = 8;
 const CEILING = 15;
@@ -235,7 +235,7 @@ function setup(shaders)
                     boxThrowMovement = radius;
                 else{
                     if((b.reachGroundTime**2 * b.motorVelocity) <= (b.reachGroundTime * 2 * b.motorVelocity))
-                        boxThrowMovement = radius + (b.reachGroundTime * 2 * b.motorVelocity) - (b.reachGroundTime**2 * b.motorVelocity);
+                        boxThrowMovement = radius + (b.reachGroundTime * 2 * b.motorVelocity) - (b.reachGroundTime**2 * b.motorVelocity); //Parabola effect
                 }
 
                 if(b.height <= 0.0) //If box reaches ground
