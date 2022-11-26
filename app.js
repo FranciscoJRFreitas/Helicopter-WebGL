@@ -266,7 +266,7 @@ function setup(shaders)
             CUBE.draw(gl, program, worldOptions.Mode);
         popMatrix();
 
-        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.0, 0.6, 0.09)); //Grass Green Ground Color
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.0, 0.6, 0.29)); //Grass Green Ground Color
         pushMatrix();
             multTranslation([17.5, -0.025, 0.0]);
             multScale([15.0, 0.05 , 50.0]);
@@ -306,6 +306,7 @@ function setup(shaders)
 
     function Mast()
     {
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(1.0, 1.0, 1.0)); //Mast color
         multTranslation([0.0, 0.68, 0.0]);
         multScale([0.025, 0.08, 0.025]);
 
@@ -315,6 +316,7 @@ function setup(shaders)
 
     function TailMast()
     {
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(1.0, 1.0, 1.0)); //Mast color
         multTranslation([1.2, 0.62, 0.1]);
         multRotationX(90);
         multScale([0.025, 0.08, 0.025]);
@@ -332,6 +334,7 @@ function setup(shaders)
 
     function TailBlades()
     {
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.0, 0.0, 0.0)); //TailBlades color
         pushMatrix();
             multTranslation([0.1, 0.0, 0.0]);
             TailBlade();
@@ -430,6 +433,7 @@ function setup(shaders)
 
     function HelicopterParts() 
     {
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(1, 0.0, 1.0)); //Helicopter color
         pushMatrix();
             Body();
         popMatrix();
@@ -442,6 +446,7 @@ function setup(shaders)
         pushMatrix();
             TailMast();
         popMatrix();
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.0, 0.0, 0.0)); //Blades color
         pushMatrix();
             multRotationY(360 * bladeTime);
             Blades();
@@ -452,6 +457,7 @@ function setup(shaders)
             multRotationZ(360 * bladeTime);
             TailBlades();
         popMatrix();
+        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(0.0, 0.0, 0.0)); //LandingSkids color
         pushMatrix();
             LandingSkids()
         popMatrix(); 
@@ -777,13 +783,13 @@ function setup(shaders)
     function BuildingDestructed()
     {
     pushMatrix();
-        multTranslation([23.6,8.0,-4.3]);
+        multTranslation([23.6,8.0,-2.3]);
         multRotationY(-180);
         multScale([2.0,1.0,1.0]);
         BuildingDestruction();
     popMatrix();
     pushMatrix();
-        multTranslation([22.6,4.2,-3.6]);
+        multTranslation([22.6,4.2,-1.6]);
         multRotationX(45);
         multScale([1.0,1.5,0.2]);
         BuildingDestruction();
@@ -803,28 +809,28 @@ function setup(shaders)
         BuildingDestruction();
     popMatrix();
     pushMatrix();
-        multTranslation([22.6,4.2,-5.9]);
+        multTranslation([22.6,4.2,-3.9]);
         multRotationX(-30);
         multScale([2.0,2.0,0.2]);
         BuildingDestruction();
     popMatrix();
     pushMatrix();
-        multTranslation([22.4, 7.5,-1.34]);
+        multTranslation([22.4, 7.5, 0.67]);
         multScale([7.25, 4.0, 0.7]);
         BuildingDestruction();
     popMatrix();
     pushMatrix();
-        multTranslation([15.5,15.5,-1.31]);
+        multTranslation([15.5,15.5, 0.61]);
         multScale([0.3,0.15,0.3]);
         Building();
     popMatrix();
     pushMatrix();
-        multTranslation([22.4,9.5,-8.1]);
+        multTranslation([22.4,9.5,-6.1]);
         multScale([7.25, 6.0, 0.7]);
         BuildingDestruction();
     popMatrix();  
     pushMatrix();
-        multTranslation([4.3,0.0,45.0]);
+        multTranslation([4.3,0.0,47.0]);
         multScale([0.8, 0.5, 2.2]);
         Building();  
     popMatrix();
@@ -1260,7 +1266,7 @@ function setup(shaders)
 
     function World()
     {
-        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(1, 0.0, 1.0)); //Helicopter color
+        
 
         Helicopter();
 
@@ -1268,8 +1274,6 @@ function setup(shaders)
             multTranslation([0.0,-0.4,0.0]);
             DropBox();
         popMatrix();
-
-        gl.uniform3fv(gl.getUniformLocation(program, "uColor"), vec3(.2, .2, .2));
 
         pushMatrix();
             multTranslation([10.0,0.0,0.0]);
