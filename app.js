@@ -1,5 +1,5 @@
 import { buildProgramFromSources, loadShadersFromURLS, setupWebGL } from "./libs/utils.js";
-import { ortho, lookAt, flatten, vec3, vec4, rotateX, rotateY, mult, inverse} from "./libs/MV.js";
+import { ortho, lookAt, flatten, vec2, vec3, vec4, rotateX, rotateY, mult, inverse} from "./libs/MV.js";
 import {modelView, loadMatrix, multRotationY, multScale, multTranslation, popMatrix, pushMatrix, multRotationX, multRotationZ} from "./libs/stack.js";
 
 import * as SPHERE from './libs/objects/sphere.js';
@@ -39,6 +39,7 @@ let posCamera;
 let atCamera;
 let mModel;
 let thirdPerson = false;
+let mouseIsDragging = false;
 
 const camera = new function(){
     this.Zoom = 100;
@@ -137,6 +138,44 @@ function setup(shaders)
             worldOpt.Mode = gl.LINES;
         else
             worldOpt.Mode = gl.TRIANGLES;
+    });
+
+    function getCursorPosition(canvas, event) 
+    {
+        const mx = event.offsetX;
+        const my = event.offsetY;
+
+        const x = ((mx / canvas.width * 2) - 1);
+        const y = (((canvas.height - my)/canvas.height * 2) - 1);
+
+        return vec2(x,y);
+    }
+
+    let initpos = vec2(0,0);
+    canvas.addEventListener("mousedown", function(event) {
+        mouseIsDragging = true;
+        initpos = getCursorPosition(canvas, event);
+    });
+
+    canvas.addEventListener("mouseup", function(event) {
+        mouseIsDragging = false;
+    });
+
+    canvas.addEventListener("mousemove", function(event) {
+        const pos = getCursorPosition(canvas, event);
+        
+        if (mouseIsDragging && !thirdPerson) {
+            var dy = (pos[1] - initpos[1]) * 45;
+            var dx = (pos[0] - initpos[0]) * 90;
+            // update the latest angle
+            camera.Theta > 180 ? camera.Theta = 180 : camera.Theta += dy;
+            camera.Gama > 180 ? camera.Gama = 180 : camera.Gama += dx;
+            camera.Theta < -180 ? camera.Theta = -180 : camera.Theta += dy;
+            camera.Gama < -180 ? camera.Gama = -180 : camera.Gama += dx;
+            mView = mult(lookAt([1.0, 0.5, 1.0], [-5.0, -2.5, -5.0], [0,1,0]), mult(rotateY(camera.Gama), rotateX(camera.Theta)));
+        }
+        initpos[0] = pos[0];
+        initpos[1] = pos[1];
     });
 
     document.getElementById("axonometricView").onclick = function changeAxonometricView() {
@@ -1306,11 +1345,11 @@ function setup(shaders)
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         if(thirdPerson){
-            
             mModel = mult(inverse(mView), heliView);
             posCamera = mult(mModel, vec4(0.0,0.0,0.0,1.0));
             atCamera = mult(mModel, vec4(0.0,0.0,2.0,1.0));
-            mView = lookAt([posCamera[0], posCamera[1], posCamera[2]], [atCamera[0], atCamera[1], atCamera[2]], [0,1,0]);
+            mView = lookAt([posCamera[0], posCamera[1], posCamera[2]],
+                [atCamera[0], atCamera[1], atCamera[2]], [0,1,0]);
         }
         else{
             mProjection = ortho(-aspect, aspect, -1, 1,-5,5);
