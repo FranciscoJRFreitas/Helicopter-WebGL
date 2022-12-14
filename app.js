@@ -90,7 +90,7 @@ function setup(shaders)
     let mProjection = ortho(-aspect, aspect, -1, 1,-5,5);
 
     const gui = new GUI();
-    
+
     const camOptFolder = gui.addFolder('Camera Options');
     camOptFolder.add(camera, "Zoom", 50, 1000).name("Zoom (%)").listen();
     var gamaCam = camOptFolder.add(camera, "Gama", -180, 180).name("Gama (º)").listen();
